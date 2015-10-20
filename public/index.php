@@ -3,12 +3,13 @@ echo 'start<br>' ;
 use Thunderhawk\Autoloader;
 use Thunderhawk\Di\Container;
 use Thunderhawk\Plugin\Test ;
+use Thunderhawk\Parser\Ini;
+use Thunderhawk\Parser\Configuration;
 
 require '../src/core/Autoloader.php';
 
 
 $loader = new Autoloader('../src/');
-//$loader->demandLoader('Symfony\Component\ClassLoader\ClassLoader');
 
 $loader->setPriorities(array(
 		Autoloader::NAMESPACES => Autoloader::PRIORITY_HIGH
@@ -34,22 +35,53 @@ $loader->registerClasses(array(
 	'MyClass'				=> 'path/to/lib/',
 	'MyNamespace\MyClass'	=> 'path/to/lib/sub/'
 ));
-//$loader->addExtension('conf.php');
+
 $loader->register();
-//$test = new vendor\package\component\MyClass();
-//$test = new vendor_package_component_MyClass();
-//$test = new MyClass();*/
 
 $di = new Container();
 $di->set('test',function(){
 	return new Test();
 },true);
 
-$di->test->set('foo');
-var_dump($di->test->get());
-$di->test->set('bar');
-$value = $di->get('test')->get();
-var_dump($value);
 
-var_dump($di->isShared('test'));
-var_dump($di->isOverridable('test'));
+$data = array(
+		'test' => true,
+		'section' => array(
+				'value01' => 1e16,
+				'value02' => 'string',
+				'value03' => false,
+				'value04' => null,
+				'value05' => 11.0E+18
+		),
+		'db'	=> array(
+				'user'		=> 'johndoe',
+				'password'	=> '1254$87ABC',
+				'host'		=> 'localhost'
+		)
+		
+);
+//var_dump($data);
+
+$config = new Configuration(array(
+		'db' => array(
+				'username' => 'foo',
+				'password' => '123'
+		)
+));
+
+$config2 = new Configuration(array(
+		'db' => array(
+				'host'		=> 'localhost',
+				'username' 	=> 'bar'
+		)
+));
+
+var_dump($config->getConfiguration());
+
+$config->merge($config2);
+
+var_dump($config->getConfigurationObject());
+
+$config->save('../src/config/test.ini');
+
+
