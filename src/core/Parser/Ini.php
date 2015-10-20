@@ -17,8 +17,7 @@ class Ini {
 			'TRUE' => true,
 			'0' => false,
 			'false' => false,
-			'FALSE' => false,
-			'' => false 
+			'FALSE' => false
 	);
 	private $nulls = array (
 			'null' => null,

@@ -46,7 +46,6 @@ class Configuration extends Ini{
 		}
 	}
 	public function __get($name){
-		var_dump('call get');
 		if(isset($this->configuration[$name])){
 			return $this->configuration_object->{$name} ;
 		}

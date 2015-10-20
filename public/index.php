@@ -5,6 +5,9 @@ use Thunderhawk\Di\Container;
 use Thunderhawk\Plugin\Test ;
 use Thunderhawk\Parser\Ini;
 use Thunderhawk\Parser\Configuration;
+use Thunderhawk\Db\PDO\Mysql;
+use Thunderhawk\Db\PDO\Sqlite;
+
 
 require '../src/core/Autoloader.php';
 
@@ -62,26 +65,18 @@ $data = array(
 );
 //var_dump($data);
 
-$config = new Configuration(array(
+$db_config = new Configuration(array(
 		'db' => array(
-				'username' => 'foo',
-				'password' => '123'
+				'host' 		=> 'localhost',
+				'dbname'	=> 'thunderhawk',
+				'username' 	=> 'root',
+				'password' 	=> ''
 		)
 ));
+$db_config_2 = new Configuration('../src/config/test.ini');
+var_dump((array)$db_config_2->options);
+$db = new Mysql($db_config_2->db);
 
-$config2 = new Configuration(array(
-		'db' => array(
-				'host'		=> 'localhost',
-				'username' 	=> 'bar'
-		)
+$sqlite = new Sqlite(array(
+		'dbname' => '../src/data/test.db'
 ));
-
-var_dump($config->getConfiguration());
-
-$config->merge($config2);
-
-var_dump($config->getConfigurationObject());
-
-$config->save('../src/config/test.ini');
-
-
