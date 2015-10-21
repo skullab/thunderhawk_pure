@@ -1,114 +1,65 @@
 <?php
-echo 'start<br>' ;
+echo 'start<br>';
 use Thunderhawk\Autoloader;
-use Thunderhawk\Di\Container;
-use Thunderhawk\Plugin\Test ;
-use Thunderhawk\Parser\Ini;
-use Thunderhawk\Parser\Configuration;
-use Thunderhawk\Db\PDO\Mysql;
-use Thunderhawk\Db\PDO\Sqlite;
-use Thunderhawk\Di\Thunderhawk\Di;
-use Thunderhawk\Mvc\Model;
-use Thunderhawk\Plugin\Thunderhawk\Plugin;
-use Thunderhawk\Mvc\Model\MetaData;
-
-
+use Thunderhawk\Db\PDO\Dsn;
 require '../src/core/Autoloader.php';
 
+$loader = new Autoloader ( '../src/' );
 
-$loader = new Autoloader('../src/');
+/*
+ * $loader->setPriorities(array(
+ * Autoloader::NAMESPACES => Autoloader::PRIORITY_HIGH
+ * ));
+ */
 
-$loader->setPriorities(array(
-		Autoloader::NAMESPACES => Autoloader::PRIORITY_HIGH
-));
-$loader->registerNamespaces(array(
-		'Thunderhawk'		=> 'core/',
-		'vendor'			=> 'path/to/lib/',
-		'vendor\package'	=> 'path/to/lib/sub/'
-));
-$loader->registerNamespaces(array(
-	'Thunderhawk\Plugin'	=> 'plugins/'	
-),true);
-$loader->registerPrefixes(array(
-		'vendor_' 			=> 'path/to/lib/',
-		'vendor_package'	=> 'path/to/lib/sub/'
-));
-$loader->registerDirs(array(
-		'path/to/lib/',
-		'path/to/lib/sub/',
-		'path/to/lib/prefixClass_'
-));
-$loader->registerClasses(array(
-	'MyClass'				=> 'path/to/lib/',
-	'MyNamespace\MyClass'	=> 'path/to/lib/sub/'
-));
+$loader->registerNamespaces ( array (
+		'Thunderhawk' => 'core/',
+		'Thunderhawk\Plugin' => 'plugins/',
+		'Thunderhawk\Module' => 'modules/' 
+) )->register();
 
-$loader->register();
+$mysql_dsn = Dsn::create('mysql:host=localhost;port=3333;dbname=foo;user=test;password=123');
+$sqlite_dsn = Dsn::create('sqlite:path/to/db');
+$mysql_dsn->host = 'otherhost' ;
+var_dump($sqlite_dsn->prefix);
+var_dump($sqlite_dsn->sqlite_param);
 
-$di = new Container();
-$di->set('test',function(){
-	return new Test();
-},true);
+var_dump($mysql_dsn->prefix,$mysql_dsn->host,$mysql_dsn->port,$mysql_dsn->user,$mysql_dsn->dbname,$mysql_dsn->option);
+
+var_dump($sqlite_dsn->resolve());
+var_dump($mysql_dsn->resolve());
+
+$oracle_dsn = Dsn::createByDriver(Dsn::PREFIX_ORACLE);
+$oracle_dsn->dbname = 'mydb' ;
+$oracle_dsn->host = 'localhost' ;
+$oracle_dsn->port = 3333 ;
+$oracle_dsn->charset = 'foo' ;
+var_dump($oracle_dsn->resolve());
+
+$alias_dsn = Dsn::create('my_alias');
+var_dump($alias_dsn->resolve());
+
+$pgsql = Dsn::createByDriver(Dsn::PREFIX_POSTGRESQL);
+$pgsql->user = 'foo' ;
+$pgsql->password = '123' ;
+$pgsql->host = '127.0.0.1' ;
+$pgsql->dbname = 'mydb' ;
+$pgsql->port = 3333 ;
+var_dump($pgsql->resolve());
+
+$mysql_dsn = Dsn::createByDriver(Dsn::PREFIX_MYSQL);
+$mysql_dsn->host = 'localhost';
+$mysql_dsn->user = 'foo' ;
+$mysql_dsn->dbname = 'mydb' ;
+$mysql_dsn->port = 3333 ;
+var_dump($mysql_dsn->resolve());
+
+$sqlite_dsn = Dsn::createByDriver(Dsn::PREFIX_SQLITE);
+$sqlite_dsn->dbname = 'mydb.db' ;
+var_dump($sqlite_dsn->resolve());
 
 
-$data = array(
-		'test' => true,
-		'section' => array(
-				'value01' => 1e16,
-				'value02' => 'string',
-				'value03' => false,
-				'value04' => null,
-				'value05' => 11.0E+18
-		),
-		'db'	=> array(
-				'user'		=> 'johndoe',
-				'password'	=> '1254$87ABC',
-				'host'		=> 'localhost'
-		)
-		
-);
-//var_dump($data);
 
-$db_config = new Configuration(array(
-		'db' => array(
-				'host' 		=> 'localhost',
-				'dbname'	=> 'thunderhawk',
-				'username' 	=> 'root',
-				'password' 	=> ''
-		)
-));
-
-$db_config_2 = new Configuration('../src/config/test.ini');
-//var_dump((array)$db_config_2->options);
-//$db = new Mysql($db_config_2->db);
-
-$di = new Container();
-$di->set('db',function() use($db_config_2){
-	return new Mysql($db_config_2->db);
-},true);
-
-/*Model::find();
-$stm = $di->db->query('SELECT * from users') ;
-$stm->setFetchMode(PDO::FETCH_CLASS,'Thunderhawk\Plugin\Test',array('test'=>'prova'));
-foreach ($stm as $row){
-	var_dump($row);
-}*/
-
-class Users extends Model{
-	protected $id ;
-	public $name ;
-	public $password ;
-}
-
-/*$users = Users::find(1);
-foreach ($users as $user){
-	$user->name = 'other' ;	
-	var_dump($user->update());
-}*/
-$user = new Users();
-$user->name = 'ciao' ;
-$user->password = '999' ;
-$user->update();
 
 
 

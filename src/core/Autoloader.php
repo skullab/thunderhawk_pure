@@ -251,7 +251,7 @@ class Autoloader {
 					if (isset ( $this->_namespaces [$namespace] )) {
 						//var_dump ( 'found : ' . $namespace . ' - path : ' . $this->_namespaces [$namespace] );
 						$filename = $this->_base_dir . $this->_namespaces [$namespace] . str_replace ( '\\', '/', $className );
-						return $this->requireFile ( $filename );
+						if($this->requireFile ( $filename ))return ;
 					}
 				}
 			}
@@ -270,7 +270,7 @@ class Autoloader {
 				foreach ( $package as $namespace => $className ) {
 					if (isset ( $this->_namespaces [$namespace] )) {
 						$filename = $this->_base_dir . $this->_namespaces [$namespace] . str_replace ( '\\', '/', $className );
-						return $this->requireFile ( $filename );
+						if($this->requireFile ( $filename ))return;
 					}
 				}
 			}
@@ -287,7 +287,7 @@ class Autoloader {
 				if ($this->_priorities [self::PREFIXES] == self::PRIORITY_NULL) {
 					if (isset ( $this->_prefixes [$prefix] )) {
 						$filename = $this->_base_dir . $this->_prefixes [$prefix] . str_replace ( $this->_prefix_separator, '/', $className );
-						return $this->requireFile ( $filename );
+						if($this->requireFile ( $filename ))return ;
 					}
 				}
 			}
@@ -305,7 +305,7 @@ class Autoloader {
 				foreach ( $package as $prefix => $className ) {
 					if (isset ( $this->_prefixes [$prefix] )) {
 						$filename = $this->_base_dir . $this->_prefixes [$prefix] . str_replace ( $this->_prefix_separator, '/', $className );
-						return $this->requireFile ( $filename );
+						if($this->requireFile ( $filename ))return;
 					}
 				}
 			}
@@ -316,7 +316,7 @@ class Autoloader {
 		//var_dump ( 'search in classes : ' . $class );
 		if (isset ( $this->_classes [$class] )) {
 			$filename = $this->_base_dir . $this->_classes [$class] . str_replace ( DIRECTORY_SEPARATOR, '/', $class );
-			return $this->requireFile ( $filename );
+			if($this->requireFile ( $filename ))return;
 		}
 		// search in dirs
 		switch ($this->_priorities [self::DIRS]) {
@@ -331,17 +331,20 @@ class Autoloader {
 		//var_dump ( 'search in dirs : ' . $class );
 		foreach ( $this->_directories as $dir ) {
 			$filename = $this->_base_dir . $dir . str_replace ( DIRECTORY_SEPARATOR, '/', $class );
-			$this->requireFile ( $filename );
+			if($this->requireFile ( $filename ))return;
 		}
 		//var_dump ( 'end load class' );
 	}
 	private function requireFile($path) {
+		$file_exist = false ;
 		foreach ( $this->_extensions as $ext ) {
 			$filename = $path . '.' . $ext;
 			//var_dump ( 'file exists  ? : ' . $filename );
 			if (file_exists ( $filename )) {
+				$file_exist = true ;
 				require $filename;
 			}
 		}
+		return $file_exist ;
 	}
 }
