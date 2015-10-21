@@ -7,6 +7,10 @@ use Thunderhawk\Parser\Ini;
 use Thunderhawk\Parser\Configuration;
 use Thunderhawk\Db\PDO\Mysql;
 use Thunderhawk\Db\PDO\Sqlite;
+use Thunderhawk\Di\Thunderhawk\Di;
+use Thunderhawk\Mvc\Model;
+use Thunderhawk\Plugin\Thunderhawk\Plugin;
+use Thunderhawk\Mvc\Model\MetaData;
 
 
 require '../src/core/Autoloader.php';
@@ -73,10 +77,40 @@ $db_config = new Configuration(array(
 				'password' 	=> ''
 		)
 ));
-$db_config_2 = new Configuration('../src/config/test.ini');
-var_dump((array)$db_config_2->options);
-$db = new Mysql($db_config_2->db);
 
-$sqlite = new Sqlite(array(
-		'dbname' => '../src/data/test.db'
-));
+$db_config_2 = new Configuration('../src/config/test.ini');
+//var_dump((array)$db_config_2->options);
+//$db = new Mysql($db_config_2->db);
+
+$di = new Container();
+$di->set('db',function() use($db_config_2){
+	return new Mysql($db_config_2->db);
+},true);
+
+/*Model::find();
+$stm = $di->db->query('SELECT * from users') ;
+$stm->setFetchMode(PDO::FETCH_CLASS,'Thunderhawk\Plugin\Test',array('test'=>'prova'));
+foreach ($stm as $row){
+	var_dump($row);
+}*/
+
+class Users extends Model{
+	protected $id ;
+	public $name ;
+	public $password ;
+}
+
+/*$users = Users::find(1);
+foreach ($users as $user){
+	$user->name = 'other' ;	
+	var_dump($user->update());
+}*/
+$user = new Users();
+$user->name = 'ciao' ;
+$user->password = '999' ;
+$user->update();
+
+
+
+
+

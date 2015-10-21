@@ -3,8 +3,11 @@
 namespace Thunderhawk\Db;
 
 abstract class PDO extends \PDO {
+	
+	protected $schema ;
 	protected $settings, $prefix, $dsn, $username, $password, $options;
 	protected $is_connected = false;
+	
 	public function __construct($settings, $options = array()) {
 		$this->settings = ( array ) $settings;
 		$this->options = ( array ) $options;
