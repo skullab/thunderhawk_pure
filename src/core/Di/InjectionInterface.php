@@ -3,6 +3,6 @@
 namespace Thunderhawk\Di;
 
 interface InjectionInterface {
-	public function setDi(Container $di);
+	public function setDi(ContainerInterface $di);
 	public function getDi();
 }

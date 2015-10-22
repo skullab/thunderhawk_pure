@@ -2,6 +2,8 @@
 echo 'start<br>';
 use Thunderhawk\Autoloader;
 use Thunderhawk\Db\PDO\Dsn;
+use Thunderhawk\Db\PDO\Driver\Bridge;
+use Thunderhawk\Db\Database;
 require '../src/core/Autoloader.php';
 
 $loader = new Autoloader ( '../src/' );
@@ -18,7 +20,7 @@ $loader->registerNamespaces ( array (
 		'Thunderhawk\Module' => 'modules/' 
 ) )->register();
 
-$mysql_dsn = Dsn::create('mysql:host=localhost;port=3333;dbname=foo;user=test;password=123');
+/*$mysql_dsn = Dsn::create('mysql:host=localhost;port=3333;dbname=foo;user=test;password=123');
 $sqlite_dsn = Dsn::create('sqlite:path/to/db');
 $mysql_dsn->host = 'otherhost' ;
 var_dump($sqlite_dsn->prefix);
@@ -56,7 +58,37 @@ var_dump($mysql_dsn->resolve());
 
 $sqlite_dsn = Dsn::createByDriver(Dsn::PREFIX_SQLITE);
 $sqlite_dsn->dbname = 'mydb.db' ;
+$sqlite_dsn->user = 'foo' ;
 var_dump($sqlite_dsn->resolve());
+
+//Generic ODBC DSN
+$odbc = Dsn::create('odbc:DRIVER={IBM DB2 ODBC DRIVER};HOSTNAME=localhost;PORT=50000;DATABASE=SAMPLE;PROTOCOL=TCPIP;UID=db2inst1;PWD=ibmdb2;');
+$odbc = Dsn::create('odbc:Driver={Microsoft Access Driver (*.mdb)};Dbq=C:\\db.mdb;Uid=Admin');
+var_dump($odbc->resolve());*/
+
+$info = array(
+		'prefix'	=> 'mysql',
+		'dbname'	=> 'thunderhawk_0_0_1',
+		'host'		=> 'localhost',
+		'user'		=>	'root',
+		'password'	=> ''
+);
+
+$mysql = Dsn::createByArray($info);
+
+$db = new Database($mysql);
+
+$db->debug(Database::ERRMODE_EXCEPTION);
+var_dump($db->isOpen());
+$db->close();
+var_dump($db->isOpen());
+$db->reset();
+$result = new stdClass();
+$st = $db->prepare('SELECT * FROM users');
+$st->setFetchMode(PDO::FETCH_INTO,$result);
+$st->execute();
+$st->fetch();
+var_dump($result);
 
 
 

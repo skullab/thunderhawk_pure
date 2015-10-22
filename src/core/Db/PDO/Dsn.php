@@ -8,7 +8,8 @@ class Dsn {
 	const PREFIX_SQLITE_2 = 'sqlite2';
 	const PREFIX_ORACLE = 'oci';
 	const PREFIX_POSTGRESQL = 'pgsql';
-	private $by_driver;
+	protected $by_prefix;
+	protected $is_generic;
 	protected $prefix;
 	protected $host;
 	protected $port;
@@ -21,9 +22,14 @@ class Dsn {
 	protected $password;
 	// SQLite only
 	protected $sqlite_param;
-	private function __construct($prefix, $parameters = array(), $by_driver = false) {
-		$this->by_driver = $by_driver;
+	// ODBC Generic db
+	protected $generic_param;
+	private function __construct($prefix, $parameters = array(), $by_prefix = false, $is_generic = false) {
+		$this->by_prefix = $by_prefix;
+		$this->is_generic = $is_generic;
 		$this->prefix = ( string ) $prefix;
+		if ($this->is_generic)
+			$this->generic_param = $parameters;
 		if ($this->prefix == self::PREFIX_SQLITE || $this->prefix == self::PREFIX_SQLITE_2) {
 			foreach ( $parameters as $key => $value ) {
 				if (! is_numeric ( $key )) {
@@ -41,8 +47,17 @@ class Dsn {
 	public function resolve() {
 		$dsn = $this->prefix . ':';
 		$dsn_oci = '';
+		$skip = false;
+		if ($this->is_generic) {
+			foreach ( $this->generic_param as $key => $value ) {
+				$dsn .= $key . '=' . $value . ';';
+			}
+			return rtrim ( rtrim ( rtrim ( $dsn, ';' ), ':' ), '=' );
+		}
 		foreach ( get_object_vars ( $this ) as $name => $value ) {
-			if (! is_null ( $value ) && $name != 'prefix' && $name != 'by_driver') {
+			if ($skip)
+				break;
+			if (! is_null ( $value ) && $name != 'prefix' && $name != 'by_prefix' && $name != 'is_generic' && $name != 'generic_param') {
 				switch ($this->prefix) {
 					case self::PREFIX_ORACLE :
 						if (! ($name == 'user' || $name == 'password')) {
@@ -54,27 +69,35 @@ class Dsn {
 									$dsn_oci .= ';' . $name . '=' . $value;
 									break;
 								case 'host' :
-									$dsn_oci .= '//'.$value;
+									$dsn_oci .= '//' . $value;
 									break;
 								default :
-									$dsn_oci .= '/'.$value;
+									$dsn_oci .= '/' . $value;
 							}
-							$dsn = str_replace('///', '//', $this->prefix . ':dbname=' . $dsn_oci);
+							$dsn = str_replace ( '///', '//', $this->prefix . ':dbname=' . $dsn_oci );
+						}
+						break;
+					
+					case self::PREFIX_SQLITE_2 :
+					case self::PREFIX_SQLITE :
+						if (($name == 'dbname' || $name == 'sqlite_param')) {
+							$dsn .= $value . ';';
+							$skip = true;
 						}
 						break;
 					default :
-						if ($this->prefix == self::PREFIX_POSTGRESQL || ! ($name == 'user' || $name == 'password'))
-							$dsn .= $name != 'sqlite_param' ? $name . '=' . $value . ';' : $value;
+						if (($this->prefix == self::PREFIX_POSTGRESQL || ! ($name == 'user' || $name == 'password')) && $name != 'sqlite_param')
+							$dsn .= $name . '=' . $value . ';';
 				}
 			}
 		}
-		return rtrim ( rtrim ( $dsn, ';' ), ':' );
+		return rtrim ( rtrim ( rtrim ( $dsn, ';' ), ':' ), '=' );
 	}
 	public function __get($name) {
 		return (isset ( $this->{$name} ) ? $this->{$name} : null);
 	}
 	public function __set($name, $value) {
-		if (property_exists ( __CLASS__, $name ) && $this->by_driver)
+		if (property_exists ( __CLASS__, $name ) && $this->by_prefix && $name != 'prefix')
 			$this->{$name} = $value;
 	}
 	public static function create($definition) {
@@ -88,13 +111,22 @@ class Dsn {
 				$parameters [$def [0]] = @$def [1];
 			}
 		}
-		// var_dump($definition[0],$parameters);
-		return new Dsn ( $definition [0], $parameters );
+		
+		$is_generic = in_array ( $definition [0], self::getPrefixes () ) ? true : false;
+		return new Dsn ( $definition [0], $parameters, false, $is_generic );
 	}
-	public static function createByDriver($prefix) {
+	public static function createByPrefix($prefix) {
 		if (in_array ( $prefix, self::getPrefixes () )) {
 			return new Dsn ( ( string ) $prefix, array (), true );
 		}
+	}
+	public static function createByArray(array $parameters) {
+		if (! isset ( $parameters ['prefix'] ))
+			return;
+		$prefix = $parameters ['prefix'];
+		unset ( $parameters ['prefix'] );
+		$is_generic = in_array ( $prefix, self::getPrefixes () ) ? false : true;
+		return new Dsn ( $prefix, $parameters, false, $is_generic );
 	}
 	public static function getPrefixes() {
 		$o = new \ReflectionClass ( __CLASS__ );
