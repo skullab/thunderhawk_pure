@@ -5,6 +5,7 @@ use Thunderhawk\Db\PDO\Dsn;
 use Thunderhawk\Db\PDO\Driver\Bridge;
 use Thunderhawk\Db\Database;
 use Thunderhawk\Db\PDO\ConnectionPool;
+use Thunderhawk\Db\PDO\Connector;
 
 
 
@@ -83,10 +84,14 @@ $info = array(
 $info2 = array_merge($info,array('host' => '127.0.0.1'));
 
 $dsn = Dsn::createByArray($info);
-$dsn2 = Dsn::createByArray($info);
+$dsn2 = Dsn::createByArray($info2);
 
-ConnectionPool::resolveConnection($dsn);
-ConnectionPool::resolveConnection($dsn2);
+$c1 = new Connector($dsn);
+$c2 = new Connector($dsn2);
+$ao = array($c1,$c2);
+foreach ($ao as $connection){
+	var_dump($connection->isDsnEqual($dsn));
+}
 
 
 
