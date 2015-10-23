@@ -4,6 +4,10 @@ use Thunderhawk\Autoloader;
 use Thunderhawk\Db\PDO\Dsn;
 use Thunderhawk\Db\PDO\Driver\Bridge;
 use Thunderhawk\Db\Database;
+use Thunderhawk\Db\PDO\ConnectionPool;
+
+
+
 require '../src/core/Autoloader.php';
 
 $loader = new Autoloader ( '../src/' );
@@ -67,28 +71,22 @@ $odbc = Dsn::create('odbc:Driver={Microsoft Access Driver (*.mdb)};Dbq=C:\\db.md
 var_dump($odbc->resolve());*/
 
 $info = array(
+		'tag'		=> 'master',
 		'prefix'	=> 'mysql',
 		'dbname'	=> 'thunderhawk_0_0_1',
 		'host'		=> 'localhost',
 		'user'		=>	'root',
-		'password'	=> ''
+		'password'	=> '',
+		'options'	=> array(PDO::ATTR_ERRMODE => PDO::ERRMODE_SILENT)
 );
 
-$mysql = Dsn::createByArray($info);
+$info2 = array_merge($info,array('host' => '127.0.0.1'));
 
-$db = new Database($mysql);
+$dsn = Dsn::createByArray($info);
+$dsn2 = Dsn::createByArray($info);
 
-$db->debug(Database::ERRMODE_EXCEPTION);
-var_dump($db->isOpen());
-$db->close();
-var_dump($db->isOpen());
-$db->reset();
-$result = new stdClass();
-$st = $db->prepare('SELECT * FROM users');
-$st->setFetchMode(PDO::FETCH_INTO,$result);
-$st->execute();
-$st->fetch();
-var_dump($result);
+ConnectionPool::resolveConnection($dsn);
+ConnectionPool::resolveConnection($dsn2);
 
 
 

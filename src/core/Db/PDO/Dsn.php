@@ -10,6 +10,9 @@ class Dsn {
 	const PREFIX_POSTGRESQL = 'pgsql';
 	protected $by_prefix;
 	protected $is_generic;
+	protected $tag;
+	protected $options;
+	// dsn declaration
 	protected $prefix;
 	protected $host;
 	protected $port;
@@ -41,7 +44,7 @@ class Dsn {
 			return;
 		}
 		foreach ( $parameters as $key => $value ) {
-			$this->{$key} = ( string ) $value;
+			$this->{$key} = $value;
 		}
 	}
 	public function resolve() {
@@ -57,7 +60,7 @@ class Dsn {
 		foreach ( get_object_vars ( $this ) as $name => $value ) {
 			if ($skip)
 				break;
-			if (! is_null ( $value ) && $name != 'prefix' && $name != 'by_prefix' && $name != 'is_generic' && $name != 'generic_param') {
+			if (! is_null ( $value ) && $name != 'tag' && $name != 'options' && $name != 'prefix' && $name != 'by_prefix' && $name != 'is_generic' && $name != 'generic_param') {
 				switch ($this->prefix) {
 					case self::PREFIX_ORACLE :
 						if (! ($name == 'user' || $name == 'password')) {
@@ -112,7 +115,7 @@ class Dsn {
 			}
 		}
 		
-		$is_generic = in_array ( $definition [0], self::getPrefixes () ) ? true : false;
+		$is_generic = in_array ( $definition [0], self::getPrefixes () ) ? false : true;
 		return new Dsn ( $definition [0], $parameters, false, $is_generic );
 	}
 	public static function createByPrefix($prefix) {
