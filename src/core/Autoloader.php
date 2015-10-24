@@ -342,6 +342,7 @@ class Autoloader {
 			//var_dump ( 'file exists  ? : ' . $filename );
 			if (file_exists ( $filename )) {
 				$file_exist = true ;
+				//var_dump('require '.$filename);
 				require $filename;
 			}
 		}
