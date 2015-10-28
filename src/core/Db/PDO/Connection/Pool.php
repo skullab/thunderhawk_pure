@@ -22,10 +22,10 @@ class Pool {
 		if ($which instanceof Dsn) {
 			var_dump ( 'dsn' );
 			$found = false;
-			foreach ( $this->map->getConnections () as $connections ) {
-				foreach ( $connections as $connection ) {
-					if ($connection->getDsn ()->equal ( $which )) {
-						$connector = $connection;
+			foreach ( $this->map->getConnectors() as $connectors ) {
+				foreach ( $connectors as $c ) {
+					if ($c->getDsn ()->equal ( $which )) {
+						$connector = $c;
 						$found = true;
 						break;
 					}
@@ -35,7 +35,7 @@ class Pool {
 			}
 		} else if (is_string ( $which )) {
 			var_dump ( 'string' );
-			$connector = $this->map->getConnection ( $which, $index );
+			$connector = $this->map->getConnector( $which, $index );
 		} else {
 			var_dump ( 'first' );
 			$connector = $this->map->getFirstAvailable ();
@@ -45,5 +45,12 @@ class Pool {
 		}else{
 			throw new PoolException('No connections available');
 		}
+	}
+	
+	public function getRandomConnection($tag = null){
+		$tags = $this->map->getTags();
+		$tag = $tag ? $tag : $tags[mt_rand(0,count($tags)-1)] ;
+		$index = mt_rand(0,$this->map->count($tag)-1);
+		return $this->map->getConnector($tag,$index);
 	}
 }
