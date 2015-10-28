@@ -49,7 +49,8 @@ class Map extends \ArrayObject{
 	}
 	public function getConnection($tag,$index = 0){
 		$connections = $this->__get($tag);
-		return $connections[$index] ;
+		if($connections)return $connections[$index] ;
+		return null ;
 	}
 	public function getFirstAvailable(){
 		foreach (array_values($this->getArrayCopy()) as $map){

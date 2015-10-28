@@ -1,11 +1,13 @@
 <?php
 
 namespace Thunderhawk\Db\PDO\Connection;
+
 use Thunderhawk\Db\PDO\Connection\Map;
 use Thunderhawk\Db\PDO\Dsn;
+use Thunderhawk\Db\PDO\Connection\Pool\PoolException;
+
 class Pool {
 	private $map;
-	
 	public function __construct(Map $map = null) {
 		$this->map = $map ? $map : new Map ();
 	}
@@ -18,7 +20,7 @@ class Pool {
 	public function getConnection($which = null, $index = 0) {
 		$connector = null;
 		if ($which instanceof Dsn) {
-			var_dump('dsn');
+			var_dump ( 'dsn' );
 			$found = false;
 			foreach ( $this->map->getConnections () as $connections ) {
 				foreach ( $connections as $connection ) {
@@ -32,14 +34,16 @@ class Pool {
 					break;
 			}
 		} else if (is_string ( $which )) {
-			var_dump ( 'ops' );
+			var_dump ( 'string' );
 			$connector = $this->map->getConnection ( $which, $index );
 		} else {
-			var_dump('first');
+			var_dump ( 'first' );
 			$connector = $this->map->getFirstAvailable ();
 		}
-		
-		return $connector->connect() ;
+		if ($connector) {
+			return $connector->connect ();
+		}else{
+			throw new PoolException('No connections available');
+		}
 	}
-		
 }
