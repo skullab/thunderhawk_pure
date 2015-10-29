@@ -2,7 +2,9 @@
 
 namespace Thunderhawk\Db\PDO\Connection;
 use Thunderhawk\Db\PDO\Dsn;
-class Connector {
+use Thunderhawk\Db\PDO\Connection\Connector\ConnectorInterface;
+
+class Connector implements ConnectorInterface{
 	
 	private $dsn = null ;
 	private $connection = null ;
