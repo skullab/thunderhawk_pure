@@ -18,7 +18,7 @@ $loader->registerNamespaces ( array (
 /*									TEST AREA 										*/
 /************************************************************************************/
 $info = array(
-		'tag'		=> 'custom',
+		'tag'		=> 'master',
 		'prefix'	=> 'mysql',
 		'dbname'	=> 'thunderhawk',
 		'host'		=> 'localhost',
@@ -28,6 +28,7 @@ $info = array(
 );
 
 $info2 = array(
+		'tag'		=> 'master',
 		'prefix'	=> 'mysql',
 		'dbname'	=> 'thunderhawk',
 		'host'		=> '127.0.0.1',
@@ -37,20 +38,23 @@ $info2 = array(
 );
 
 $dsn = new Dsn($info);
-//$dsn2 = new Dsn($info2);
+$dsn2 = new Dsn($info2);
 
 $connector = new Connector($dsn);
-//$connection2 = new Connector($dsn2);
+$connector2 = new Connector($dsn2);
 
-$map = new Map();
+$map = new Map(array($connector,$connector2));
 
-$map->add($connector);
-var_dump($map->count('custom'));
 $pool = new Pool($map);
 
-$db = $pool->getRandomConnection();
+$db = $pool->getRandomConnection('master');
 //$db2 = $pool->getConnection('custom');
-var_dump(mt_rand(0,0));
+//var_dump($db);
+
+$base_uri = 'thunderhawk/';
+$uri = substr($_SERVER['REQUEST_URI'],strlen($base_uri));
+
+var_dump($uri);
 
 
 

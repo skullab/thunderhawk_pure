@@ -47,10 +47,19 @@ class Pool {
 		}
 	}
 	
-	public function getRandomConnection($tag = null){
-		$tags = $this->map->getTags();
-		$tag = $tag ? $tag : $tags[mt_rand(0,count($tags)-1)] ;
-		$index = mt_rand(0,$this->map->count($tag)-1);
-		return $this->map->getConnector($tag,$index);
+	public function getRandomConnection($tag = null,$diff = null){
+		$tags = $diff ? array_values($diff) : $this->map->getTags() ;
+		$target = $tag ? $tag : $tags[mt_rand(0,count($tags)-1)] ;
+		//var_dump($target);
+		if(($c = $this->map->count($target)) <= 0){
+			if($target == $tag)throw new PoolException('No connections available');
+			$i = array_keys($tags,$target) ;
+			//var_dump($i);
+			unset($tags[$i[0]]);
+			//var_dump($tags);
+			return $this->getRandomConnection($tag,$tags);
+		}
+		$index = mt_rand(0,$c-1);
+		return $this->map->getConnector($target,$index);
 	}
 }
