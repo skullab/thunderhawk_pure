@@ -1,203 +1,228 @@
 <?php
 
 namespace Thunderhawk;
-  
+
 use Thunderhawk\Router\RouterInterface;
+use Thunderhawk\Router\Route\RouteInterface;
 use Thunderhawk\Router\Route;
 
-class Router implements RouterInterface{
-	
-	const HTTP_METHOD_GET = 'GET' ;
+class Router implements RouterInterface {
+	const SOURCE_MODE_GET_URL = 100;
+	const SOURCE_MODE_SERVER_REQUEST_URI = 200;
+	const HTTP_METHOD_GET = 'GET';
 	const HTTP_METHOD_POST = 'POST';
-	const HTTP_METHOD_PUT = 'PUT' ;
-	const HTTP_METHOD_PATCH = 'PATCH' ;
-	const HTTP_METHOD_DELETE = 'DELETE' ;
-	const HTTP_METHOD_OPTIONS = 'OPTIONS' ;
-	const HTTP_METHOD_HEAD = 'HEAD' ;
+	const HTTP_METHOD_PUT = 'PUT';
+	const HTTP_METHOD_PATCH = 'PATCH';
+	const HTTP_METHOD_DELETE = 'DELETE';
+	const HTTP_METHOD_OPTIONS = 'OPTIONS';
+	const HTTP_METHOD_HEAD = 'HEAD';
+	private $defaults = array (
+			'module' => null,
+			'controller' => null,
+			'action' => null 
+	);
+	private $routes = array ();
+	private $matches;
+	private $macthed_route = null;
+	private $requested_uri;
+	private $source_mode = self::SOURCE_MODE_GET_URL;
 	
-	private $defaults = array();
-	private $routes = array();
-	private $matches ;
-	private $macthed_route = null ;
-	private $requested_uri ;
-	
-	public function setDefaultModule($moduleName) {
-		$this->defaults['module'] = (string)$moduleName;
-	}
-
-	
-	public function setDefaultController($controllerName) {
-		$this->defaults['controller'] = (string)$controllerName;
-	}
-
-	
-	public function setDefaultAction($actionName) {
-		$this->defaults['action'] = (string)$actionName;
-	}
-
-	
-	public function setDefaults(array $defaults) {
-		$this->defaults = $defaults ;
-	}
-
-	
-	public function handle($uri = null) {
-		$this->requested_uri = $uri ? $uri : $_GET['_url'] ;
-		if($this->wasMatched()){
-			// call route handler 
+	public function __construct($setDefault = true) {
+		if ($setDefault) {
+			$this->setDefaultAction ( 'index' );
+			$this->setDefaultController ( 'index' );
+			// $this->setDefaultModule('');
+			$this->add ( '' );
+			$this->add('/:controller',array('controller'=>1,'action'=>'index'));
+			$this->add('/:controller/:action',array('controller'=>1,'action'=>2));
 		}
 	}
-
-	
+	public function setDefaultModule($moduleName) {
+		$this->defaults ['module'] = ( string ) $moduleName;
+	}
+	public function setDefaultController($controllerName) {
+		$this->defaults ['controller'] = ( string ) $controllerName;
+	}
+	public function setDefaultAction($actionName) {
+		$this->defaults ['action'] = ( string ) $actionName;
+	}
+	public function setDefaults(array $defaults) {
+		$this->defaults = $defaults;
+	}
+	public function setSourceMode($mode) {
+		if (is_int ( $mode )) {
+			$this->source_mode = $mode;
+		}
+	}
+	public function handle($uri = null) {
+		switch ($this->source_mode) {
+			case self::SOURCE_MODE_SERVER_REQUEST_URI :
+				$url = $_SERVER ['REQUEST_URI'];
+				break;
+			default :
+				$url = isset ( $_GET ['_url'] ) ? $_GET ['_url'] : '/';
+		}
+		
+		$this->requested_uri = $uri ? $uri : $url;
+		if ($this->wasMatched ()) {
+			
+			if (! in_array ( $_SERVER ['REQUEST_METHOD'], $this->getMatchedRoute ()->getHttpMethods () )) {
+				var_dump ( 'route matched but wrong http method' );
+			}
+			
+			$module = $this->getModuleName () ? $this->getModuleName () : $this->defaults ['module'];
+			$controller = $this->getControllerName () ? $this->getControllerName () : $this->defaults ['controller'];
+			$action = $this->getActionName () ? $this->getActionName () : $this->defaults ['action'];
+			$params = $this->getParams ();
+			var_dump ( $module, $controller, $action, $params );
+		} else {
+			var_dump ( 'no matched route' );
+		}
+	}
 	public function add($pattern, $handler = array(), $httpMethods = array()) {
-		$route = $pattern instanceof Route ? $pattern : new Route($pattern,$handler,$httpMethods);
-		$this->routes[$route->getRouteId()] = $route ;
-		return $route ;
+		$route = new Route ( $pattern, $handler, $httpMethods );
+		array_unshift($this->routes, $route);
+		return $route;
 	}
-
-	
+	public function addRoute(RouteInterface $route){
+		
+	}
 	public function addGet($pattern, $handler) {
-		return $this->add($pattern,$handler,array(self::HTTP_METHOD_GET));
+		return $this->add ( $pattern, $handler, array (
+				self::HTTP_METHOD_GET 
+		) );
 	}
-
-	
 	public function addPost($pattern, $handler) {
-		return $this->add($pattern,$handler,array(self::HTTP_METHOD_POST));
+		return $this->add ( $pattern, $handler, array (
+				self::HTTP_METHOD_POST 
+		) );
 	}
-
-	
 	public function addPut($pattern, $handler) {
-		return $this->add($pattern,$handler,array(self::HTTP_METHOD_PUT));
+		return $this->add ( $pattern, $handler, array (
+				self::HTTP_METHOD_PUT 
+		) );
 	}
-
-	
 	public function addPatch($pattern, $handler) {
-		return $this->add($pattern,$handler,array(self::HTTP_METHOD_PATCH));
+		return $this->add ( $pattern, $handler, array (
+				self::HTTP_METHOD_PATCH 
+		) );
 	}
-
-	
 	public function addDelete($pattern, $handler) {
-		return $this->add($pattern,$handler,array(self::HTTP_METHOD_DELETE));
+		return $this->add ( $pattern, $handler, array (
+				self::HTTP_METHOD_DELETE 
+		) );
 	}
-
-	
 	public function addOptions($pattern, $handler) {
-		return $this->add($pattern,$handler,array(self::HTTP_METHOD_OPTIONS));
+		return $this->add ( $pattern, $handler, array (
+				self::HTTP_METHOD_OPTIONS 
+		) );
 	}
-
-	
 	public function addHead($pattern, $handler) {
-		return $this->add($pattern,$handler,array(self::HTTP_METHOD_HEAD));
+		return $this->add ( $pattern, $handler, array (
+				self::HTTP_METHOD_HEAD 
+		) );
 	}
-
-	
 	public function mount($group) {
 		// TODO: Auto-generated method stub
-
 	}
-
-	
 	public function clear() {
 		// TODO: Auto-generated method stub
-
 	}
-
-	
 	public function getModuleName() {
-		$handler = $this->macthed_route->getHandler();
-		if(array_key_exists('module', $handler)){
-			$name = is_int($handler['module']) ? $this->getMatches()[$handler['module']] : $handler['module'] ;
-			return $name ;
+		if (! $this->macthed_route)
+			return null;
+		$handler = $this->macthed_route->getHandler ();
+		if (array_key_exists ( 'module', $handler )) {
+			$name = is_int($handler['module']) ? $this->getMatches()[$handler['module']] : $handler ['module'];
+			return $name;
 		}
-		return null ;
+		return null;
 	}
-
-	
 	public function getNamespaceName() {
 		// TODO: Auto-generated method stub
-
 	}
-
-	
 	public function getControllerName() {
-		$handler = $this->macthed_route->getHandler();
-		if(array_key_exists('controller', $handler)){
-			$name = is_int($handler['controller']) ? $this->getMatches()[$handler['controller']] : $handler['controller'] ;
-			return $name ;
+		if (! $this->macthed_route)
+			return null;
+		$handler = $this->macthed_route->getHandler ();
+		if (array_key_exists ( 'controller', $handler )) {
+			$name = is_int($handler['controller']) ? $this->getMatches()[$handler['controller']] : $handler ['controller'];
+			// $name = ucfirst($name).'Controller';
+			return $name;
 		}
-		return null ;
+		return null;
 	}
-
-	
 	public function getActionName() {
-		$handler = $this->macthed_route->getHandler();
-		if(array_key_exists('action', $handler)){
-			$name = is_int($handler['action']) ? $this->getMatches()[$handler['action']] : $handler['action'] ;
-			return $name ;
+		if (! $this->macthed_route)
+			return null;
+		$handler = $this->macthed_route->getHandler ();
+		if (array_key_exists ( 'action', $handler )) {
+			$name = is_int($handler['action']) ? $this->getMatches()[$handler['action']] : $handler ['action'];
+			// $name .= 'Action' ;
+			return $name;
 		}
-		return null ;
+		return null;
 	}
-
-	
 	public function getParams() {
-		$handler = $this->macthed_route->getHandler();
-		if(array_key_exists('params', $handler)){
-			$params = is_int($handler['params']) ? $this->getMatches()[$handler['params']] : $handler['params'] ;
-			if(is_array($params)){
-				//todo resolve params
+		if (! $this->macthed_route)
+			return null;
+		$handler = $this->macthed_route->getHandler ();
+		if (array_key_exists ( 'params', $handler )) {
+			$params = is_int($handler['params']) ? $this->getMatches()[$handler['params']] : $handler ['params'];
+			if (is_array ( $params )) {
+				foreach ( $params as $key => $param ) {
+					if (is_int ( $param )) {
+						$params[$key] = $this->getMatches()[$param] ;
+					}
+				}
 				return $params;
 			}
-			return array($params);
-		}else{
-			$params = explode('/',rtrim(ltrim(substr($this->requested_uri, strlen($this->matches[0])),'/'),'/'));
-			return $params ;
+			return array (
+					$params 
+			);
+		} else {
+			$params = explode ( '/', rtrim ( ltrim ( substr ( $this->requested_uri, strlen ( $this->matches [0] ) ), '/' ), '/' ) );
+			return $params;
 		}
 	}
-
-	
 	public function getMatchedRoute() {
-		return $this->macthed_route ;
+		return $this->macthed_route;
 	}
-
-	
 	public function getMatches() {
-		return $this->matches ;
+		return $this->matches;
 	}
-
-	
 	public function wasMatched() {
-		foreach ($this->routes as $route){
-			$match = preg_match($route->getCompiledPattern(), $this->requested_uri,$this->matches);
-			if(false !== $match && $match > 0){
-				$this->macthed_route = $route ;
-				return true ;
+		foreach ( $this->routes as $route ) {
+			$match = preg_match ( $route->getCompiledPattern (), $this->requested_uri, $this->matches );
+			if (false !== $match && $match > 0) {
+				$this->macthed_route = $route;
+				return true;
 			}
 		}
-		return false ;
+		return false;
 	}
-
-	
 	public function getRoutes() {
-		return array_values($this->routes);
+		return array_values ( $this->routes );
 	}
-
-	
 	public function getRouteById($id) {
-		if(array_key_exists($id, $this->routes)){
-			$route = array_keys($this->routes,$id);
-			return $route[0] ;
-		}
-		return null ;
-	}
-
-	
-	public function getRouteByName($name) {
-		foreach ($this->routes as $route){
-			if($name == $route->getName){
-				return $route ;
+		foreach ( $this->routes as $route ) {
+			if ($id == $route->getRouteId()) {
+				return $route;
 			}
 		}
-		return null ;
+		return null;
+		/*if (array_key_exists ( $id, $this->routes )) {
+			$route = array_keys ( $this->routes, $id );
+			return $route [0];
+		}
+		return null;*/
 	}
-
+	public function getRouteByName($name) {
+		foreach ( $this->routes as $route ) {
+			if ($name == $route->getName) {
+				return $route;
+			}
+		}
+		return null;
+	}
 }

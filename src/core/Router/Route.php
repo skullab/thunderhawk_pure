@@ -7,16 +7,19 @@ use Thunderhawk\Router\Route\Rules;
 use Thunderhawk\Router\Route\RouteException;
 
 class Route implements RouteInterface {
+	
 	private $pattern;
 	private $compiled_pattern;
 	private $handler = array ();
 	private $httpMethods = array ();
 	private $id;
 	private $name;
+	
 	public function __construct($pattern, $handler = array(), $httpMethods = array()) {
 		$this->pattern = ( string ) $pattern;
 		$this->handler = ( array ) $handler;
 		$this->httpMethods = ( array ) $httpMethods;
+		if(empty($this->httpMethods))$this->via('GET');
 		$this->id = spl_object_hash ( $this );
 		$this->compilePattern ( $this->pattern );
 	}

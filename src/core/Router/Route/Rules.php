@@ -11,7 +11,10 @@ abstract class Rules {
 			'/:action/'			=> '([a-zA-Z0-9\_]+)',
 			'/:params/'			=> '(/.*)*',
 			'/:namespace/'		=> '([a-zA-Z0-9\_\-]+)',
-			'/:int/'			=> '([0-9]+)' 
+			'/:int/'			=> '([0-9]+)',
+			'/:string/'			=> '([a-zA-Z\-\-]+)' ,
+			'/:alphanumeric/'	=> '([a-zA-Z0-9\-\-]+)',
+			'/:mixed/'			=> '([a-zA-Z0-9\-\-]+)'	
 	);
 	
 	public static function add($placeholder,$replacement){

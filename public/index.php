@@ -51,19 +51,22 @@ $pool = new Pool($map);
 
 $db = $pool->getRandomConnection('master');
 
-$route = new Route('/blog/post/:int/:params',array(
+$route = new Route('/blog/post/:int/:mixed',array(
+		'module'=>'blogmodule',
 		'controller'=>'post',
 		'action'=>'index',
 		'params' => array(
 				'id' => 1,
-				'extra' => 2
+				'title' => 2
 		)
-)); 
+),array('GET','POST')); 
 
 $router = new Router();
-$router->add($route);
+$router->setDefaultModule('frontend');
+$router->addRoute($route);
 $router->handle();
-var_dump($router->getParams());
+var_dump($router->getRoutes());
+
 
 
 
