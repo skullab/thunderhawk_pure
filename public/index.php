@@ -7,6 +7,7 @@ use Thunderhawk\Db\PDO\Connection\Map;
 use Thunderhawk\Db\PDO\Connection\ConnectionException;
 use Thunderhawk\Db\PDO\Connection\Pool;
 use Thunderhawk\Router\Route;
+use Thunderhawk\Router;
 
 require '../src/core/Autoloader.php';
 $loader = new Autoloader ( '../src/' );
@@ -50,15 +51,20 @@ $pool = new Pool($map);
 
 $db = $pool->getRandomConnection('master');
 
-$route = new Route('/:controller/:action/([0-9]+)',array(
-		'controller'=>1,
-		'action'=>2,
-		'id'	=>3
+$route = new Route('/blog/post/:int/:params',array(
+		'controller'=>'post',
+		'action'=>'index',
+		'params' => array(
+				'id' => 1,
+				'extra' => 2
+		)
 )); 
 
-var_dump($route->getCompiledPattern());
-var_dump(preg_match($route->getCompiledPattern(),'/blog/post/8',$matches));
-var_dump($matches);
+$router = new Router();
+$router->add($route);
+$router->handle();
+var_dump($router->getParams());
+
 
 
 

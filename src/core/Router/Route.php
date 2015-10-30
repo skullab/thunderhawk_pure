@@ -4,6 +4,7 @@ namespace Thunderhawk\Router;
 
 use Thunderhawk\Router\Route\RouteInterface;
 use Thunderhawk\Router\Route\Rules;
+use Thunderhawk\Router\Route\RouteException;
 
 class Route implements RouteInterface {
 	private $pattern;
@@ -20,6 +21,7 @@ class Route implements RouteInterface {
 		$this->compilePattern ( $this->pattern );
 	}
 	public function compilePattern($pattern) {
+		if(!is_string($pattern))throw new RouteException('No valid pattern');
 		$this->compiled_pattern = '/' . str_replace ( '/', '\/', preg_replace ( Rules::getPlaceholders (), Rules::getReplacements (), $pattern ) ) . '/';
 	}
 	public function via($httpMethods) {
