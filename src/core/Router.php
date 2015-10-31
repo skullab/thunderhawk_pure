@@ -18,6 +18,7 @@ class Router implements RouterInterface {
 	const HTTP_METHOD_HEAD = 'HEAD';
 	private $defaults = array (
 			'module' => null,
+			'namespace' => null,
 			'controller' => null,
 			'action' => null 
 	);
@@ -32,6 +33,7 @@ class Router implements RouterInterface {
 			$this->setDefaultAction ( 'index' );
 			$this->setDefaultController ( 'index' );
 			// $this->setDefaultModule('');
+			// $this->setDefaultNamespace('');
 			$this->add ( '' );
 			$this->add('/:controller',array('controller'=>1,'action'=>'index'));
 			$this->add('/:controller/:action',array('controller'=>1,'action'=>2));
@@ -39,6 +41,9 @@ class Router implements RouterInterface {
 	}
 	public function setDefaultModule($moduleName) {
 		$this->defaults ['module'] = ( string ) $moduleName;
+	}
+	public function setDefaultNamespace($namespaceName){
+		$this->defaults['namespace'] = (string)$namespaceName;
 	}
 	public function setDefaultController($controllerName) {
 		$this->defaults ['controller'] = ( string ) $controllerName;
@@ -71,21 +76,23 @@ class Router implements RouterInterface {
 			}
 			
 			$module = $this->getModuleName () ? $this->getModuleName () : $this->defaults ['module'];
+			$namespace = $this->getNamespaceName() ? $this->getNamespaceName() : $this->defaults['namespace'];
 			$controller = $this->getControllerName () ? $this->getControllerName () : $this->defaults ['controller'];
 			$action = $this->getActionName () ? $this->getActionName () : $this->defaults ['action'];
 			$params = $this->getParams ();
-			var_dump ( $module, $controller, $action, $params );
+			var_dump($this->getMatches());
+			var_dump ( $module, $namespace,$controller, $action, $params );
 		} else {
 			var_dump ( 'no matched route' );
 		}
 	}
 	public function add($pattern, $handler = array(), $httpMethods = array()) {
 		$route = new Route ( $pattern, $handler, $httpMethods );
-		array_unshift($this->routes, $route);
-		return $route;
+		return $this->addRoute($route);
 	}
 	public function addRoute(RouteInterface $route){
-		
+		array_unshift($this->routes, $route);
+		return $route ;
 	}
 	public function addGet($pattern, $handler) {
 		return $this->add ( $pattern, $handler, array (
@@ -139,7 +146,13 @@ class Router implements RouterInterface {
 		return null;
 	}
 	public function getNamespaceName() {
-		// TODO: Auto-generated method stub
+		if(! $this->macthed_route) return null ;
+		$handler = $this->macthed_route->getHandler();
+		if(array_key_exists('namespace', $handler)){
+			$name = is_int($handler['namespace']) ? $this->getMatches()[$handler['namespace']] : $handler['namespace'] ;
+			return $name ;
+		}
+		return null ;
 	}
 	public function getControllerName() {
 		if (! $this->macthed_route)
@@ -172,17 +185,20 @@ class Router implements RouterInterface {
 			if (is_array ( $params )) {
 				foreach ( $params as $key => $param ) {
 					if (is_int ( $param )) {
-						$params[$key] = $this->getMatches()[$param] ;
+						$params[$key] = @$this->getMatches()[$param] ;
 					}
 				}
 				return $params;
 			}
-			return array (
-					$params 
-			);
+			return explode('/',trim($params,'/'));
 		} else {
-			$params = explode ( '/', rtrim ( ltrim ( substr ( $this->requested_uri, strlen ( $this->matches [0] ) ), '/' ), '/' ) );
-			return $params;
+			//var_dump('get params from url');
+			$path = trim(substr($this->requested_uri,strlen($this->matches[0])),'/');
+			//var_dump($path);
+			if($path !== false && trim($path) != false){
+				$params = explode('/',$path);
+				return $params ;
+			}else return array();
 		}
 	}
 	public function getMatchedRoute() {

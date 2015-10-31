@@ -59,13 +59,15 @@ $route = new Route('/blog/post/:int/:mixed',array(
 				'id' => 1,
 				'title' => 2
 		)
-),array('GET','POST')); 
+),array('POST')); 
 
 $router = new Router();
 $router->setDefaultModule('frontend');
+$router->setDefaultNamespace('Thunderhawk\Plugin');
 $router->addRoute($route);
 $router->handle();
-var_dump($router->getRoutes());
+var_dump($router->getMatchedRoute());
+var_dump($_SERVER);
 
 
 

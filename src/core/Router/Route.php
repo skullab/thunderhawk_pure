@@ -25,7 +25,7 @@ class Route implements RouteInterface {
 	}
 	public function compilePattern($pattern) {
 		if(!is_string($pattern))throw new RouteException('No valid pattern');
-		$this->compiled_pattern = '/' . str_replace ( '/', '\/', preg_replace ( Rules::getPlaceholders (), Rules::getReplacements (), $pattern ) ) . '/';
+		$this->compiled_pattern = '/^' . str_replace ( '/', '\/', preg_replace ( Rules::getPlaceholders (), Rules::getReplacements (), $pattern ) ) . '$/';
 	}
 	public function via($httpMethods) {
 		if (is_string ( $httpMethods )) {
