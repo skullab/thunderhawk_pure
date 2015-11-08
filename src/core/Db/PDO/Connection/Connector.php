@@ -1,15 +1,15 @@
 <?php
 
 namespace Thunderhawk\Db\PDO\Connection;
-use Thunderhawk\Db\PDO\Dsn;
 use Thunderhawk\Db\PDO\Connection\Connector\ConnectorInterface;
+use Thunderhawk\Db\PDO\Dsn\DsnInterface;
 
 class Connector implements ConnectorInterface{
 	
 	private $dsn = null ;
 	private $connection = null ;
 	
-	public function __construct(Dsn $dsn){
+	public function __construct(DsnInterface $dsn){
 		$this->dsn = $dsn ;
 	}
 	public function __destruct(){
@@ -19,7 +19,7 @@ class Connector implements ConnectorInterface{
 	public function connect(){
 		if($this->connection == null){
 			try{
-			var_dump('call new PDO connection');
+			//var_dump('call new PDO connection');
 			$this->connection = new \PDO($this->dsn->resolve(),
 					$this->dsn->getUser(),
 					$this->dsn->getPassword(),

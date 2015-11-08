@@ -3,8 +3,9 @@
 namespace Thunderhawk\Db\PDO;
 
 use Thunderhawk\Db\PDO\Dsn\DsnException;
+use Thunderhawk\Db\PDO\Dsn\DsnInterface;
 
-class Dsn {
+class Dsn implements DsnInterface{
 	//
 	const PREFIX_MYSQL = 'mysql';
 	const PREFIX_SQLITE = 'sqlite';

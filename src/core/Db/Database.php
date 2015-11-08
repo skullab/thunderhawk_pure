@@ -3,7 +3,10 @@
 namespace Thunderhawk\Db;
 use Thunderhawk\Db\PDO\Dsn;
 use Thunderhawk\Db\PDO\Connection\Connector;
-class Database {
+use Thunderhawk\Di\ContainerInjection;
+use Thunderhawk\Db\PDO\Dsn\DsnInterface;
+use Thunderhawk\Db\PDO\Connection\Connector\ConnectorInterface;
+class Database extends ContainerInjection {
 	//
 	const ERR_NONE = \PDO::ERR_NONE ;
 	const ERRMODE_SILENT = \PDO::ERRMODE_SILENT ;
@@ -27,72 +30,66 @@ class Database {
 			"SERVER_VERSION",
 			"TIMEOUT" 
 	);
-	public function __construct($method) {
+	public function __construct($method = null) {
 		if(is_array($method)){
-			$this->connector = new Connector(new Dsn($method));
+			$this->setConnector(new Connector(new Dsn($method)));
+			//$this->setPDO($this->getConnector()->connect());
+		}else if($method instanceof DsnInterface){
+			$this->setConnector(new Connector($method));
+			//$this->setPDO($this->getConnector()->connect());
+		//}else if($method instanceof \PDO){
+		//	$this->setPDO($method);
+		}else if($method instanceof Connector){
+			$this->setConnector($method);
+			
 		}
-		
+		if($method != null)$this->open();
 	}
-	public function isOpen(){
-		return ($this->connection !== null);
+	public function open(){
+		$this->setPDO($this->getConnector()->connect());
 	}
-	public function open() {
-		$this->connection = connection::connect ( $this->dsn, $this->options );
-		$this->options = $this->getDriverOptions();
+	public function close(){
+		if($this->connector){
+			$this->connector->disconnect();
+		}
 	}
-	public function close() {
-		$this->connection = connection::disconnect();
+	public function reset(){
+		$this->setPDO($this->getConnector()->reset());
 	}
-	public function reset() {
-		$this->close ();
-		$this->options = array();
-		$this->open ();
+	public function getPDO(){
+		return $this->connection ;
 	}
-	public function getDriverPrefix() {
-		return $this->dsn->prefix;
+	public function setPDO(\PDO $connection){
+		$this->connection = $connection ;
 	}
-	public function isDriverSupported() {
-		return (in_array ( $this->dsn->prefix, $this->connection->getAvailableDrivers () ));
+	public function getConnector(){
+		return $this->connector ;
 	}
-	public function getDriverOption($attribute) {
-		return $this->connection->getAttribute ( $attribute );
+	public function setConnector(ConnectorInterface $connector){
+		$this->connector = $connector ;
 	}
-	public function getDriverOptions() {
+	public function getOption($name){
+		if(in_array($name, $this->options_name)){
+			return $this->connection->getAttribute(constant("PDO::ATTR_$name"));
+		}
+	}
+	public function getOptions(){
 		$options = array();
-		$pdo = 'PDO::ATTR_';
 		foreach ($this->options_name as $name){
-			$options[constant($pdo.$name)] = @$this->getDriverOption(constant($pdo.$name));
+			$options[$name] = $this->connection->getAttribute(constant("PDO::ATTR_$name"));
 		}
 		return $options ;
 	}
-	public function getReadableDriverOptions(){
-		$options = array();
-		$pdo = 'PDO::ATTR_';
-		foreach ($this->options_name as $name){
-			$options[$pdo.$name] = @$this->getDriverOption(constant($pdo.$name));
-		}
-		return $options ;
+	public static function getAvalaibleDrivers(){
+		return \PDO::getAvailableDrivers();
 	}
-	public function setDriverOption($attribute, $value) {
-		$this->options [$attribute] = $value;
-		return $this->connection->setAttribute ( $attribute, $value );
+	public function execute($statement){
+		return $this->getPDO()->exec($statement);
 	}
-	public function debug($errmode){
-		return $this->setDriverOption(\PDO::ATTR_ERRMODE, $errmode);
+	public function prepare($statement,array $driver_options = array()){
+		return $this->getPDO()->prepare($statement,$driver_options);
 	}
-	public function getErrorCode() {
-		return $this->connection->errorCode ();
-	}
-	public function getErrorMessages() {
-		return $this->connection->errorInfo ();
-	}
-	public function execute($sql) {
-		return $this->connection->exec ( $sql );
-	}
-	public function query($sql) {
-		return $this->connection->query ( $sql );
-	}
-	public function prepare($sql,$options = array()){
-		return $this->connection->prepare($sql,$options);
+	public function query($statement){
+		return $this->getPDO()->query($statement); 
 	}
 }

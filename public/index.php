@@ -50,7 +50,7 @@ $map = new Map(array($connector,$connector2));
 $pool = new Pool($map);
 
 $db = $pool->getRandomConnection('master');
-
+var_dump($db->getOptions());
 $route = new Route('/blog/post/:int/:mixed',array(
 		'module'=>'blogmodule',
 		'controller'=>'post',

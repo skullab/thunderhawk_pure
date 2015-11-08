@@ -5,6 +5,7 @@ namespace Thunderhawk\Db\PDO\Connection;
 use Thunderhawk\Db\PDO\Connection\Map;
 use Thunderhawk\Db\PDO\Dsn;
 use Thunderhawk\Db\PDO\Connection\Pool\PoolException;
+use Thunderhawk\Db\Database;
 
 class Pool {
 	private $map;
@@ -41,7 +42,8 @@ class Pool {
 			$connector = $this->map->getFirstAvailable ();
 		}
 		if ($connector) {
-			return $connector->connect ();
+			//return $connector->connect ();
+			return new Database($connector);
 		}else{
 			throw new PoolException('No connections available');
 		}
@@ -60,6 +62,7 @@ class Pool {
 			return $this->getRandomConnection($tag,$tags);
 		}
 		$index = mt_rand(0,$c-1);
-		return $this->map->getConnector($target,$index);
+		//return $this->map->getConnector($target,$index);
+		return $this->getConnection($target,$index);
 	}
 }
