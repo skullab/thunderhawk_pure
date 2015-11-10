@@ -13,8 +13,27 @@ class Database extends ContainerInjection {
 	const ERRMODE_WARNING = \PDO::ERRMODE_WARNING ;
 	const ERRMODE_EXCEPTION = \PDO::ERRMODE_EXCEPTION ;
 	//
+	const FETCH_LAZY = \PDO::FETCH_LAZY ;
+	const FETCH_ASSOC = \PDO::FETCH_ASSOC ;
+	const FETCH_NAMED = \PDO::FETCH_NAMED ;
+	const FETCH_NUM = \PDO::FETCH_NUM ;
+	const FETCH_BOTH = \PDO::FETCH_BOTH ;
+	const FETCH_OBJ = \PDO::FETCH_OBJ ;
+	const FETCH_BOUND = \PDO::FETCH_BOUND ;
+	const FETCH_COLUMN = \PDO::FETCH_COLUMN ;
+	const FETCH_CLASS = \PDO::FETCH_CLASS ;
+	const FETCH_INTO = \PDO::FETCH_INTO ;
+	const FETCH_FUNC = \PDO::FETCH_FUNC ;
+	const FETCH_GROUP = \PDO::FETCH_GROUP ;
+	const FETCH_UNIQUE = \PDO::FETCH_UNIQUE ;
+	const FETCH_KEY_PAIR = \PDO::FETCH_KEY_PAIR ;
+	const FETCH_CLASSTYPE = \PDO::FETCH_CLASSTYPE ;
+	const FETCH_SERIALIZE = \PDO::FETCH_SERIALIZE ;
+	const FETCH_PROPS_LATE = \PDO::FETCH_PROPS_LATE ;
+	//
 	private $connection = null;
 	private $connector = null;
+	private $query_fetch = null ;
 	//
 	private $options_name = array (
 			"AUTOCOMMIT",
@@ -89,7 +108,15 @@ class Database extends ContainerInjection {
 	public function prepare($statement,array $driver_options = array()){
 		return $this->getPDO()->prepare($statement,$driver_options);
 	}
+	public function setQueryFetch($mode){
+		if(is_int($mode)){
+			$this->query_fetch = $mode ;
+		}
+	}
+	public function getQueryFetch(){
+		return $this->query_fetch ;
+	}
 	public function query($statement){
-		return $this->getPDO()->query($statement); 
+		return $this->getPDO()->query($statement,$this->getQueryFetch()); 
 	}
 }
