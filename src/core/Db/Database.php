@@ -8,10 +8,29 @@ use Thunderhawk\Db\PDO\Dsn\DsnInterface;
 use Thunderhawk\Db\PDO\Connection\Connector\ConnectorInterface;
 class Database extends ContainerInjection {
 	//
+	const OPT_CASE = \PDO::ATTR_CASE ;
+	const OPT_ERRMODE = \PDO::ATTR_ERRMODE ;
+	const OPT_ORACLE_NULLS = \PDO::ATTR_ORACLE_NULLS ;
+	const OPT_STRINGIFY_FETCHES = \PDO::ATTR_STRINGIFY_FETCHES ;
+	const OPT_STATEMENT_CLASS = \PDO::ATTR_STATEMENT_CLASS ;
+	const OPT_TIMEOUT = \PDO::ATTR_TIMEOUT ;
+	const OPT_AUTOCOMMIT = \PDO::ATTR_AUTOCOMMIT ;
+	const OPT_EMULATE_PREPARES = \PDO::ATTR_EMULATE_PREPARES ;
+	const OPT_MYSQL_USE_BUFFERED_QUERY = \PDO::MYSQL_ATTR_USE_BUFFERED_QUERY ;
+	const OPT_DEFAULT_FETCH_MODE = \PDO::ATTR_DEFAULT_FETCH_MODE ; 
+	//
 	const ERR_NONE = \PDO::ERR_NONE ;
 	const ERRMODE_SILENT = \PDO::ERRMODE_SILENT ;
 	const ERRMODE_WARNING = \PDO::ERRMODE_WARNING ;
 	const ERRMODE_EXCEPTION = \PDO::ERRMODE_EXCEPTION ;
+	//
+	const CASE_LOWER = \PDO::CASE_LOWER ;
+	const CASE_NATURAL = \PDO::CASE_NATURAL ;
+	const CASE_UPPER = \PDO::CASE_UPPER ;
+	//
+	const NULL_NATURAL = \PDO::NULL_NATURAL ;
+	const NULL_EMPTY_STRING = \PDO::NULL_EMPTY_STRING ;
+	const NULL_TO_STRING = \PDO::NULL_TO_STRING ;
 	//
 	const FETCH_LAZY = \PDO::FETCH_LAZY ;
 	const FETCH_ASSOC = \PDO::FETCH_ASSOC ;
@@ -33,7 +52,7 @@ class Database extends ContainerInjection {
 	//
 	private $connection = null;
 	private $connector = null;
-	private $query_fetch = null ;
+	private $query_fetch = self::FETCH_ASSOC ;
 	//
 	private $options_name = array (
 			"AUTOCOMMIT",
@@ -99,6 +118,9 @@ class Database extends ContainerInjection {
 		}
 		return $options ;
 	}
+	public function setOption($option,$value){
+		return $this->getPDO()->setAttribute($option, $value);
+	}
 	public static function getAvalaibleDrivers(){
 		return \PDO::getAvailableDrivers();
 	}
@@ -118,5 +140,23 @@ class Database extends ContainerInjection {
 	}
 	public function query($statement){
 		return $this->getPDO()->query($statement,$this->getQueryFetch()); 
+	}
+	public function lastId($name = null){
+		return $this->getPDO()->lastInsertId($name);
+	}
+	public function getErrorCode(){
+		return $this->getPDO()->errorCode();
+	}
+	public function getErrorMessages(){
+		return $this->getPDO()->errorInfo();
+	}
+	public function transaction(){
+		return $this->getPDO()->beginTransaction();
+	}
+	public function commit(){
+		return $this->getPDO()->commit();
+	}
+	public function rollBack(){
+		return $this->getPDO()->rollBack();
 	}
 }
