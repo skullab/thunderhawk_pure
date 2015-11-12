@@ -12,6 +12,9 @@ use Thunderhawk\Db\Database;
 use Thunderhawk\Mvc\Model;
 use Thunderhawk\Utils;
 use Thunderhawk\Mvc\Model\Resultset;
+use Thunderhawk\Mvc\Model\MetaData;
+use Thunderhawk\Di\Container;
+use Thunderhawk\Db\Thunderhawk\Db;
 
 require '../src/core/Autoloader.php';
 $loader = new Autoloader ( '../src/' );
@@ -33,26 +36,36 @@ $info = array(
 		'options'	=> array(Database::OPT_ERRMODE,Database::ERRMODE_SILENT)
 );
 
-$db = new Database($info);
 
+$di = new Container();
+$di->set('db', function($di) use($info){
+	return new Database($info);
+});
 
-class MyTableOfPower extends Model {
+class Users extends Model {
+	private $id ;
+	//private $username ;
+	//public $password ;
 	
-	/*public function getTableName() {
-		return 'other_table_name' ;
+	/*public function getTableName(){
+		return 'all' ;
 	}*/
+	public function getId(){
+		return $this->id ;
+	}
+	public function getDi(){
+		global $di ;
+		return $di ;
+	}
+	protected function initialize(){
+		 
+	}
 
 }
 
-$m = new MyTableOfPower();
-var_dump($m->getTableName());
-
-$rs = new Resultset();
-
-$rs[] = 'ciao' ;
-
-foreach ($rs as $row){
-	var_dump($row);
-}
-
+$user = Users::findFirst();
+$user->username = 'nuovo2' ;
+$user->password = 'nuova password';
+var_dump($user->update());
+var_dump($di->db->getErrorCode());
 
