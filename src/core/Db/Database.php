@@ -124,6 +124,28 @@ class Database extends ContainerInjection {
 	public static function getAvalaibleDrivers(){
 		return \PDO::getAvailableDrivers();
 	}
+	public static function encapsulateProperty($list,$apex = '`'){
+		$encapsulated = null ;
+		if(is_array($list)){
+			$encapsulated = array();
+			foreach ($list as $key => $property){
+				$encapsulated[$key] = $apex.$property.$apex ;
+			}
+		}else if (is_string($list)){
+			$encapsulated = $apex.$list.$apex ;
+		}
+		return $encapsulated ;
+	}
+	public static function implodeBindValues($list,$separator = ','){
+		$imploded = null ;
+		$count = 0 ;
+		if(is_array($list))$count = count($list);
+		if(is_numeric($list))$count = $list ;
+		for($i=0;$i<$count;$i++){
+			$imploded .= '?'.$separator ;
+		}
+		return rtrim($imploded,$separator);
+	}
 	public function execute($statement){
 		return $this->getPDO()->exec($statement);
 	}

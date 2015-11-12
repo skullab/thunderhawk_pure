@@ -63,9 +63,8 @@ class Users extends Model {
 
 }
 
-$user = Users::findFirst();
-$user->username = 'nuovo2' ;
-$user->password = 'nuova password';
-var_dump($user->update());
-var_dump($di->db->getErrorCode());
+$user = new Users();
+$user->username = 'testing' ;
+$user->password = 'newpassword' ;
+var_dump($user->create());
 

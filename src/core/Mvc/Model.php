@@ -260,8 +260,17 @@ class Model implements InjectionInterface, ModelInterface, \Serializable {
 	 * (non-PHPdoc)
 	 * @see \Thunderhawk\Mvc\Model\ModelInterface::create()
 	 */
-	public function create($data, $whiteList) {
-		// TODO: Auto-generated method stub
+	public function create($data = null, $whiteList = null) {
+		$sql = "INSERT INTO " .Database::encapsulateProperty($this->getTableName()).
+		"(".implode(',',Database::encapsulateProperty($this->_metadata->getNames())).
+		") VALUES (".Database::implodeBindValues($this->_metadata->getColumnsCount()).")" ;
+		$statement = $this->resolveConnectionService(self::CON_WRITE)->prepare($sql);
+		$this->reset();
+		foreach ($this->_record as $i => $column){
+			$statement->bindParam($i+1,$this->_record[$i],$this->_metadata->getType($i,MetaData::PDO_TYPE)[0]);
+		}
+		$response = $statement->execute();
+		return $response ;
 	}
 	
 	/*
@@ -270,6 +279,10 @@ class Model implements InjectionInterface, ModelInterface, \Serializable {
 	 */
 	public function update($data = null, $whiteList = null) {
 		$recordDiff = $this->computeRecordDifference();
+		if(empty($recordDiff)){
+			//nothing to update
+			return false ;
+		}
 		$info = $this->_metadata->getConciseInfo();
 		$sql = 'UPDATE `'.$this->getTableName().'` SET'.PHP_EOL ;
 		foreach ($recordDiff as $column => $value){

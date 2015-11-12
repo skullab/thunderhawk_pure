@@ -32,7 +32,9 @@ class MetaData implements InjectionInterface{
 		$this->setDi($model->getDi());
 		$this->retrieveInfo();
 	}
-	
+	public function getColumnsCount(){
+		return $this->column_count ;
+	}
 	public function getColumns(){
 		return $this->info ;
 	}
@@ -102,11 +104,11 @@ class MetaData implements InjectionInterface{
 	public function getPrecision($index){
 		return $this->info[$index][self::PRECISION];
 	}
-	public function getConciseInfo(){
+	public function getConciseInfo($type = self::NATIVE_TYPE){
 		$concise = array() ;
 		foreach ($this->getNames() as $index => $name){
 			$concise[$name] = array() ;
-			$concise[$name]['type'] = $this->getType($index,self::NATIVE_TYPE)[0] ;
+			$concise[$name]['type'] = $this->getType($index,$type)[0] ;
 			$concise[$name]['len'] = $this->getLen($index);
 			$concise[$name]['flags'] = $this->getFlag($index);
 		}
@@ -126,6 +128,18 @@ class MetaData implements InjectionInterface{
 	public function getPrimaryKeyName(){
 		if(array_key_exists(self::PRIMARY_KEY,$this->retrieveKeys())){
 			return $this->retrieveKeys()[self::PRIMARY_KEY][0] ;
+		}
+		return false ;
+	}
+	public function getUniqueKeysName(){
+		if(array_key_exists(self::UNIQUE_KEY, $this->retrieveKeys())){
+			return $this->retrieveKeys()[self::UNIQUE_KEY];
+		}
+		return false ;
+	}
+	public function getMultipleKeysName(){
+		if(array_key_exists(self::MULTIPLE_KEY, $this->retrieveKeys())){
+			return $this->retrieveKeys()[self::MULTIPLE_KEY];
 		}
 		return false ;
 	}
