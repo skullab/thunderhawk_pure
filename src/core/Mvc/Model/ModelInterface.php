@@ -42,4 +42,5 @@ interface ModelInterface {
 	//public function getRelated($alias, $arguments);
 	//public function setSnapshotData($data, $columnMap);
 	public function reset();
+	public function toArray(array $columns = array());
 }

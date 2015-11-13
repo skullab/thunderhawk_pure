@@ -43,28 +43,50 @@ $di->set('db', function($di) use($info){
 });
 
 class Users extends Model {
-	private $id ;
-	//private $username ;
-	//public $password ;
 	
-	/*public function getTableName(){
-		return 'all' ;
-	}*/
-	public function getId(){
-		return $this->id ;
+	private $id ;
+	private $username ;
+	private $password ;
+	
+	protected function setUsername($value){
+		var_dump('call me');
+		$this->username = 'mister '.$value ;
+	}
+	public function getUsername(){
+		return $this->username ;
+	}
+	protected function getPassword(){
+		return $this->password ;
+	}
+	protected function setPassword($value){
+		$this->password = crypt($value) ;
 	}
 	public function getDi(){
 		global $di ;
 		return $di ;
 	}
-	protected function initialize(){
-		 
+	protected function onCreate($record){
+		 $this->username .= '_coda' ;
 	}
+	
+	protected function onUpdate($recordDiff) {
+		var_dump($recordDiff);
+
+	}
+	
+	
+	protected function onDelete($record) {
+		var_dump('deleting -> '.$record['id']);
+	}
+
 
 }
 
+//$user = Users::findFirst(3);
 $user = new Users();
-$user->username = 'testing' ;
-$user->password = 'newpassword' ;
-var_dump($user->create());
+$user->save(array(
+		'username' => 'new testing',
+		'password' => 'new secret'
+));
+var_dump($user->password);
 

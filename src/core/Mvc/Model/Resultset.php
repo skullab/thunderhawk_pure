@@ -1,6 +1,7 @@
 <?php
 
 namespace Thunderhawk\Mvc\Model;
+use Thunderhawk\Mvc\Model\ModelInterface ;
 
 class Resultset implements ResultsetInterface,\SeekableIterator, \Countable, \ArrayAccess, \Serializable {
 	protected $_row = 0 ;
@@ -52,5 +53,41 @@ class Resultset implements ResultsetInterface,\SeekableIterator, \Countable, \Ar
 	}
 	public function unserialize($serialized) {
 		$this->_resultset = unserialize($serialized);
+	}
+	public function getFirst() {
+		if($this->offsetExists(0)){
+			return $this->_resultset[0] ;
+		}
+		return null ;
 	}
+
+	public function getLast() {
+		if($this->offsetExists($this->count()-1)){
+			return $this->_resultset[$this->count()-1] ;
+		}
+		return null ;
+	}
+
+	public function toArray(array $columns = array()) {
+		$result = array();
+		foreach ($this->_resultset as $model){
+			if($model instanceof ModelInterface){
+				$result[] = $model->toArray($columns);
+			}
+		}
+		return $result ;
+	}
+
+	public function filter($callable) {
+		$result = array() ;
+		if(is_callable($callable)){
+			foreach ($this->_resultset as $model){
+				if($model instanceof ModelInterface){
+					$result[] = $callable($model);
+				}
+			}
+		}
+		return $result ;
+	}
+
 }

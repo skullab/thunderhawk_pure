@@ -35,7 +35,7 @@ class Model implements InjectionInterface, ModelInterface, \Serializable {
 	);
 	protected $_metadata = null ;
 	protected $_record = array() ;
-	public $primary_key = null ;
+	protected $primary_key = null ;
 	//
 	final public function __construct(ContainerInterface $di = null) {
 		$this->setTableName ( Utils::underscore ( basename ( get_class ( $this ) ) ) );
@@ -73,7 +73,14 @@ class Model implements InjectionInterface, ModelInterface, \Serializable {
 	public function __set($property,$value){
 		if(isset($property)){
 			var_dump('set meta and obj '.$value);
-			$this->{$property} = $value ;
+			//try to call setter
+			$response = call_user_func_array(array($this,'set'.ucfirst($property)),array($value));
+			if($response === false){
+				$this->{$property} = $value ;
+			}else{
+				return $response ;
+			}
+			
 		}
 	}
 	
@@ -84,28 +91,65 @@ class Model implements InjectionInterface, ModelInterface, \Serializable {
 	public function __call($method,$args){
 		return false ;
 	}
-	public function getPrimaryKey(){
+	
+	public static function __callStatic($method,$args){
+		if((false !== ($pos = strpos($method,'findBy')) && $pos == 0)){
+			$property = lcfirst(str_replace('findBy','',$method));
+			return self::find("$property = '$args[0]'");
+		}
+		if((false !== ($pos = strpos($method,'findFirstBy')) && $pos == 0)){
+			$property = lcfirst(str_replace('findFirstBy','',$method));
+			return self::findFirst("$property = '$args[0]'");
+		}
+	}
+	protected function isPrimaryKey($property){
+		return $this->_metadata->getPrimaryKeyName() == $property ;
+	}
+	protected function getPrimaryKey(){
+		if(!is_null($this->primary_key))return $this->primary_key ;
 		if(false !== $key = $this->_metadata->getPrimaryKeyName()){
-			return $this->{$key};
+			$reflect = new \ReflectionProperty(get_class($this), $key);
+			if(!$reflect->isPublic()){
+				$reflect->setAccessible(true);
+			}
+			return $reflect->getValue($this);
 		}
 		return null ;
 	}
-	public function computeRecordDifference(){
-		$compute = array() ;
-		foreach ($this->_metadata->getNames() as $name){
-			$compute[$name] = $this->{$name} ;
+	protected function setPrimaryKey($value){
+		if(false !== $key = $this->_metadata->getPrimaryKeyName()){
+			$reflect = new \ReflectionProperty(get_class($this), $key);
+			if(!$reflect->isPublic()){
+				$reflect->setAccessible(true);
+			}
+			$reflect->setValue($this, $value);
+			$this->primary_key = $value ;
+			return true ;
 		}
+		return false ;
+	}
+	protected function computeRecordDifference(){
+		$compute = array() ;
+		
+		foreach ($this->_metadata->getNames() as $name){
+			if($this->isPrimaryKey($name)){
+				$compute[$name] = $this->getPrimaryKey() ;
+			}else{
+				$compute[$name] = $this->{$name} ;
+			}
+		}
+		
 		return array_diff($compute, $this->_record);
 	}
 	protected function initialize() {
 	}
-	protected function onCreate() {
+	protected function onCreate($record) {
 	}
 	protected function onInsert() {
 	}
-	protected function onUpdate() {
+	protected function onUpdate($recordDiff) {
 	}
-	protected function onDelete() {
+	protected function onDelete($record) {
 	}
 	protected function onSave() {
 	}
@@ -168,7 +212,7 @@ class Model implements InjectionInterface, ModelInterface, \Serializable {
 				}
 			}else
 				if(is_string($parameters)){
-				//WHERE CLAUSOLE
+				$sql .= 'WHERE '.$parameters.PHP_EOL ;
 			}else
 				if(is_array($parameters)){
 				//COMPLEX WHERE CLAUSOLE
@@ -179,7 +223,9 @@ class Model implements InjectionInterface, ModelInterface, \Serializable {
 		}
 		$statement = $class->resolveConnectionService(self::CON_READ)->prepare($sql);
 		$statement->setFetchMode(Database::FETCH_CLASS | Database::FETCH_PROPS_LATE,$class_name);
-		$statement->execute();
+		
+		if(!$statement->execute())return null ;
+		
 		$resultset = new Resultset();
 		while($obj = $statement->fetch()){
 			$obj->reset();
@@ -197,6 +243,7 @@ class Model implements InjectionInterface, ModelInterface, \Serializable {
 	 */
 	public static function findFirst($parameters = null) {
 		$resultset = self::_prepareFind($parameters,true);
+		if(!$resultset)return null ;
 		return $resultset[0] ;
 	}
 	
@@ -212,8 +259,15 @@ class Model implements InjectionInterface, ModelInterface, \Serializable {
 	 * (non-PHPdoc)
 	 * @see \Thunderhawk\Mvc\Model\ModelInterface::count()
 	 */
-	public static function count($parameters) {
-		// TODO: Auto-generated method stub
+	public static function count($parameters = null) {
+		$class_name = get_called_class ();
+		$class = new $class_name ();
+		$sql = 'SELECT COUNT(*) FROM '.$class->getTableName().PHP_EOL ;
+		if($parameters){
+			$sql .= 'WHERE '.$parameters.PHP_EOL ;
+		}
+		$statement = $class->resolveConnectionService(self::CON_READ)->query($sql);
+		return (int)$statement->fetchColumn() ;
 	}
 	
 	/*
@@ -248,46 +302,69 @@ class Model implements InjectionInterface, ModelInterface, \Serializable {
 		// TODO: Auto-generated method stub
 	}
 	
-	/*
-	 * (non-PHPdoc)
-	 * @see \Thunderhawk\Mvc\Model\ModelInterface::save()
-	 */
-	public function save($data, $whiteList) {
-		// TODO: Auto-generated method stub
+	public function save($data = null, $whiteList = null) {
+		if($this->getPrimaryKey())return $this->update($data,$whiteList);
+		return $this->create($data,$whiteList);
 	}
 	
-	/*
-	 * (non-PHPdoc)
-	 * @see \Thunderhawk\Mvc\Model\ModelInterface::create()
-	 */
 	public function create($data = null, $whiteList = null) {
+		
+		if($data){
+			foreach ($data as $parameter => $value){
+				$this->{$parameter} = $value ;
+			}
+		}
+		
 		$sql = "INSERT INTO " .Database::encapsulateProperty($this->getTableName()).
 		"(".implode(',',Database::encapsulateProperty($this->_metadata->getNames())).
 		") VALUES (".Database::implodeBindValues($this->_metadata->getColumnsCount()).")" ;
-		$statement = $this->resolveConnectionService(self::CON_WRITE)->prepare($sql);
+		
+		$interrupt = $this->onCreate($this->_record);
+		if($interrupt === false)return false;
+		
 		$this->reset();
+		
+		$statement = $this->resolveConnectionService(self::CON_WRITE)->prepare($sql);
+		
+		$n = 1 ;
 		foreach ($this->_record as $i => $column){
-			$statement->bindParam($i+1,$this->_record[$i],$this->_metadata->getType($i,MetaData::PDO_TYPE)[0]);
+			//var_dump($n,$this->_record[$i],$this->_metadata->getType($i,MetaData::PDO_TYPE)[0]);
+			$statement->bindParam($n,$this->_record[$i],$this->_metadata->getType($i,MetaData::PDO_TYPE)[0]);
+			$n++ ;
 		}
 		$response = $statement->execute();
+		if($response !== false){
+			$response = $this->setPrimaryKey($this->resolveConnectionService(self::CON_WRITE)->lastId());
+			if($response !== false)$this->reset();
+		}
 		return $response ;
 	}
 	
-	/*
-	 * (non-PHPdoc)
-	 * @see \Thunderhawk\Mvc\Model\ModelInterface::update()
-	 */
 	public function update($data = null, $whiteList = null) {
+		
+		if($data){
+			foreach ($data as $parameter => $value){
+				$this->{$parameter} = $value ;
+			}
+		}
+		
 		$recordDiff = $this->computeRecordDifference();
 		if(empty($recordDiff)){
 			//nothing to update
+			var_dump('nothing to update');
 			return false ;
 		}
+		
+		$interrupt = $this->onUpdate($recordDiff);
+		if($interrupt === false)return false ;
+		
 		$info = $this->_metadata->getConciseInfo();
 		$sql = 'UPDATE `'.$this->getTableName().'` SET'.PHP_EOL ;
 		foreach ($recordDiff as $column => $value){
 			$sql .= '`'.$column . '` = ' ;
-			
+			if($this->isPrimaryKey($column)){
+				$sql .= $this->getPrimaryKey() ;
+			}else
 			if($info[$column]['type'] == 'VAR_STRING'){
 				$sql .= "'$value'" ;
 			}else{
@@ -299,15 +376,18 @@ class Model implements InjectionInterface, ModelInterface, \Serializable {
 		$sql .= 'WHERE `'.$this->_metadata->getPrimaryKeyName().'` = '.$this->getPrimaryKey();
 		var_dump($sql);
 		$response = $this->resolveConnectionService(self::CON_WRITE)->execute($sql);
+		if($response !== false)$this->reset();
 		return $response ;
 	}
 	
-	/*
-	 * (non-PHPdoc)
-	 * @see \Thunderhawk\Mvc\Model\ModelInterface::delete()
-	 */
 	public function delete() {
-		// TODO: Auto-generated method stub
+		$sql = "DELETE FROM ".$this->getTableName().
+		" WHERE ".$this->_metadata->getPrimaryKeyName()." = ".$this->getPrimaryKey() ;
+		$this->reset();
+		$interrupt = $this->onDelete($this->_record);
+		if($interrupt === false)return false ;
+		$response = $this->resolveConnectionService(self::CON_WRITE)->execute($sql);
+		return $response ;
 	}
 	
 	/*
@@ -315,7 +395,9 @@ class Model implements InjectionInterface, ModelInterface, \Serializable {
 	 * @see \Thunderhawk\Mvc\Model\ModelInterface::refresh()
 	 */
 	public function refresh() {
-		// TODO: Auto-generated method stub
+		if(!is_null($this->getPrimaryKey())){
+			$refreshed = $this->_prepareFind($this->getPrimaryKey(),true);
+		}
 	}
 	
 	/*
@@ -324,9 +406,19 @@ class Model implements InjectionInterface, ModelInterface, \Serializable {
 	 */
 	public function reset() {
 		foreach ($this->_metadata->getNames() as $name){
-			$this->_record[$name] = $this->{$name} ;
+			if($this->isPrimaryKey($name)){
+				$this->_record[$name] = $this->getPrimaryKey() ;
+			}else{
+				$this->_record[$name] = $this->{$name} ;
+			}
 		}
 	}
+	public function undo(){
+		foreach ($this->_record as $parameter => $value){
+			$this->{$parameter} = $value ;
+		}
+	}
+	
 	public function setDi(ContainerInterface $di) {
 		$this->_di = $di;
 	}
@@ -338,5 +430,17 @@ class Model implements InjectionInterface, ModelInterface, \Serializable {
 	}
 	public function unserialize($data) {
 		$this->_record = unserialize($data);
+	}
+	public function toArray(array $columns =  array()) {
+		$this->reset();
+		$ret = array() ;
+		$columns = empty($columns) ? $this->_metadata->getNames() : $columns ;
+		foreach ($columns as $colum){
+			if(in_array($colum, $this->_metadata->getNames())){
+				$ret[$colum] = $this->_record[$colum] ;
+			}
+		}
+		return $ret ;
 	}
+
 }
