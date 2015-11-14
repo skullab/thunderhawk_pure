@@ -45,12 +45,12 @@ $di->set('db', function($di) use($info){
 class Users extends Model {
 	
 	private $id ;
-	private $username ;
-	private $password ;
+	public $username ;
+	public $password ;
 	
 	protected function setUsername($value){
 		var_dump('call me');
-		$this->username = 'mister '.$value ;
+		$this->username = $value ;
 	}
 	public function getUsername(){
 		return $this->username ;
@@ -66,7 +66,9 @@ class Users extends Model {
 		return $di ;
 	}
 	protected function onCreate($record){
-		 $this->username .= '_coda' ;
+		$record['username'] = 'cambio user' ;
+		$record['password'] = 'cambio la password' ;
+		//return $record ;
 	}
 	
 	protected function onUpdate($recordDiff) {
@@ -82,11 +84,7 @@ class Users extends Model {
 
 }
 
-//$user = Users::findFirst(3);
 $user = new Users();
-$user->save(array(
-		'username' => 'new testing',
-		'password' => 'new secret'
-));
-var_dump($user->password);
+var_dump($user->save());
+
 
