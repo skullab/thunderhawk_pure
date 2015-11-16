@@ -148,9 +148,8 @@ class Model implements InjectionInterface, ModelInterface, \Serializable {
 		}
 		return false ;
 	}
-	protected function computeRecordDifference(){
+	protected function computeRecordDifference(array $data = null){
 		$compute = array() ;
-		
 		foreach ($this->_metadata->getNames() as $name){
 			if($this->isPrimaryKey($name)){
 				$compute[$name] = $this->getPrimaryKey() ;
@@ -159,7 +158,8 @@ class Model implements InjectionInterface, ModelInterface, \Serializable {
 			}
 		}
 		
-		return array_diff($compute, $this->_record);
+		$record = $data ? $data : $compute ;
+		return array_diff($record, $this->_record);
 	}
 	protected function initialize() {
 	}
@@ -241,11 +241,12 @@ class Model implements InjectionInterface, ModelInterface, \Serializable {
 		if($first){
 			$sql .= 'LIMIT 1' ;
 		}
+		var_dump($sql);
 		$statement = $class->resolveConnectionService(self::CON_READ)->prepare($sql);
 		$statement->setFetchMode(Database::FETCH_CLASS | Database::FETCH_PROPS_LATE,$class_name);
 		
 		$response = $statement->execute();
-		$statement->closeCursor();
+		
 		if($response === false)return null ;
 		
 		$resultset = new Resultset();
@@ -253,6 +254,7 @@ class Model implements InjectionInterface, ModelInterface, \Serializable {
 			$obj->reset();
 			$resultset[] = $obj ;
 		}
+		$statement->closeCursor();
 		return $resultset ;
 	}
 	public static function find($parameters = null) {
@@ -380,14 +382,14 @@ class Model implements InjectionInterface, ModelInterface, \Serializable {
 	}
 	
 	public function update(array $data = null, array $whiteList = null) {
+	
+		//$record = $data ? $data : $this->_record ;
+		//$names = $whiteList ? $whiteList : array_keys($record);
 		
-		if($data){
-			foreach ($data as $parameter => $value){
-				$this->{$parameter} = $value ;
-			}
+		$recordDiff = $this->computeRecordDifference($data);
+		if($whiteList){
+			$recordDiff = array_intersect_key($recordDiff, array_flip($whiteList));
 		}
-		
-		$recordDiff = $this->computeRecordDifference();
 		if(empty($recordDiff)){
 			//nothing to update
 			var_dump('nothing to update');
@@ -424,14 +426,21 @@ class Model implements InjectionInterface, ModelInterface, \Serializable {
 		var_dump($sql);
 		$statement = $this->resolveConnectionService(self::CON_WRITE)->prepare($sql);
 		$n = 1 ;
+		var_dump($values);
 		foreach ($values as $column => $value){
+			$this->{$column} = $value ;
+			$assign = $this->readAttribute($column);
 			$i = array_search($column, $this->_metadata->getNames());
 			$type = $this->_metadata->getType($i,MetaData::PDO_TYPE);
-			$statement->bindParam($n,$value,$type);
+			$statement->bindParam($n,$assign,$type[0]);
+			$n++ ;
 		}
 		$response = $statement->execute();
 		$statement->closeCursor();
-		if($response !== false)$this->reset();
+		if($response !== false){
+			//$this->undo($recordDiff);
+			$this->reset();
+		}
 		return $response ;
 	}
 	

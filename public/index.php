@@ -45,8 +45,8 @@ $di->set('db', function($di) use($info){
 class Users extends Model {
 	
 	private $id ;
-	public $username ;
-	public $password ;
+	private $username ;
+	private $password ;
 	
 	protected function setUsername($value){
 		var_dump('call me');
@@ -68,7 +68,7 @@ class Users extends Model {
 	protected function onCreate($record){
 		$record['username'] = 'cambio user' ;
 		$record['password'] = 'cambio la password' ;
-		//return $record ;
+		return $record ;
 	}
 	
 	protected function onUpdate($recordDiff) {
@@ -84,7 +84,14 @@ class Users extends Model {
 
 }
 
-$user = new Users();
-var_dump($user->save());
+$user = Users::findFirst(1);
+var_dump($user->save(array(
+		'username' => 'pippo4',
+		'password' => 'test'
+),array(
+		'username','password'
+)));
+
+var_dump($user);
 
 
