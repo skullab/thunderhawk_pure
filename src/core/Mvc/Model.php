@@ -410,15 +410,6 @@ class Model implements InjectionInterface, ModelInterface, \Serializable {
 				$sql .= '`'.$column . '` = ? ,' ;
 				$values[$column] = $value ;
 			}
-			/*if($this->isPrimaryKey($column)){
-				$sql .= $this->getPrimaryKey() ;
-			}else
-			if($info[$column]['type'] == 'VAR_STRING'){
-				$sql .= "'$value'" ;
-			}else{
-				$sql .= $value ;
-			}
-			$sql .= ',' ;*/
 		}
 		
 		$sql = rtrim($sql,',').PHP_EOL;
@@ -430,15 +421,18 @@ class Model implements InjectionInterface, ModelInterface, \Serializable {
 		foreach ($values as $column => $value){
 			$this->{$column} = $value ;
 			$assign = $this->readAttribute($column);
-			$i = array_search($column, $this->_metadata->getNames());
-			$type = $this->_metadata->getType($i,MetaData::PDO_TYPE);
-			$statement->bindParam($n,$assign,$type[0]);
+			$index = array_search($column, $this->_metadata->getNames());
+			if($index){
+				$type = $this->_metadata->getType($index,MetaData::PDO_TYPE);
+			}else{
+				$type = array(\PDO::PARAM_NULL) ;
+			}
+			$statement->bindValue($n,$assign,$type[0]);
 			$n++ ;
 		}
 		$response = $statement->execute();
 		$statement->closeCursor();
 		if($response !== false){
-			//$this->undo($recordDiff);
 			$this->reset();
 		}
 		return $response ;
@@ -454,8 +448,9 @@ class Model implements InjectionInterface, ModelInterface, \Serializable {
 		return $response ;
 	}
 	
-	/*
-	 * (non-PHPdoc)
+	/**
+	 * Reassign internal parameters by Database stored data
+	 * and reset the internal record
 	 * @see \Thunderhawk\Mvc\Model\ModelInterface::refresh()
 	 */
 	public function refresh() {
@@ -468,13 +463,14 @@ class Model implements InjectionInterface, ModelInterface, \Serializable {
 				}
 				$refreshed = null ;
 			}
+			$this->reset();
 			return true ;
 		}
 		return false ;
 	}
 	
-	/*
-	 * (non-PHPdoc)
+	/**
+	 * Re-set the internal record
 	 * @see \Thunderhawk\Mvc\Model\ModelInterface::reset()
 	 */
 	public function reset() {
@@ -486,6 +482,9 @@ class Model implements InjectionInterface, ModelInterface, \Serializable {
 			}
 		}
 	}
+	/**
+	 * Rewrite internal parameters using the previously record (or chached)
+	 */
 	protected function undo(array $cached = null){
 		$record = $cached ? $cached : $this->_record ;
 		foreach ($record as $parameter => $value){

@@ -50,7 +50,7 @@ class Users extends Model {
 	
 	protected function setUsername($value){
 		var_dump('call me');
-		$this->username = $value ;
+		$this->username = 'mister '.$value ;
 	}
 	public function getUsername(){
 		return $this->username ;
@@ -84,9 +84,9 @@ class Users extends Model {
 
 }
 
-$user = Users::findFirst(1);
+$user = Users::findFirst(126);
 var_dump($user->save(array(
-		'username' => 'pippo4',
+		'username' => 'pippo5',
 		'password' => 'test'
 ),array(
 		'username','password'
