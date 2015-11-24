@@ -22,7 +22,7 @@ interface CriteriaInterface {
 	public function getWhere();
 	public function getConditions();
 	public function getLimit();
-	public function getOrder();
+	public function getOrderBy();
 	public function getParams();
 	//public function fromInput ( $dependencyInjector, $modelName, $data);
 	public function execute();

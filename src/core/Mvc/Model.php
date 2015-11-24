@@ -9,6 +9,7 @@ use Thunderhawk\Utils;
 use Thunderhawk\Mvc\Model\MetaData;
 use Thunderhawk\Db\Database;
 use Thunderhawk\Mvc\Model\Resultset;
+use Thunderhawk\Mvc\Model\Criteria;
 
 class Model implements InjectionInterface, ModelInterface, \Serializable {
 	//
@@ -206,7 +207,7 @@ class Model implements InjectionInterface, ModelInterface, \Serializable {
 	public function getWriteConnectionService() {
 		return $this->_connections [self::CON_WRITE];
 	}
-	protected function resolveConnectionService($type) {
+	public function resolveConnectionService($type) {
 		$con = $this->getConnectionService ();
 		switch ($type){
 			case self::CON_READ:
@@ -219,6 +220,16 @@ class Model implements InjectionInterface, ModelInterface, \Serializable {
 		return $con ;
 	}
 	
+	private static function getCalledModel(){
+		$model_name = get_called_class();
+		$model = new $model_name();
+		return $model ;
+	}
+	
+	private static function __prepareFind($parameters = false,$first = false){
+		
+		
+	}
 	private static function _prepareFind($parameters = null,$first = false){
 		$class_name = get_called_class ();
 		$class = new $class_name ();
@@ -275,8 +286,8 @@ class Model implements InjectionInterface, ModelInterface, \Serializable {
 	 * (non-PHPdoc)
 	 * @see \Thunderhawk\Mvc\Model\ModelInterface::query()
 	 */
-	public static function query($dependencyInjector) {
-		// TODO: Auto-generated method stub
+	public static function query($dependencyInjector = false) {
+		return new Criteria(self::getCalledModel());
 	}
 	
 	/*

@@ -11,6 +11,7 @@ interface ModelInterface {
 	public function setReadConnectionService($connectionService);
 	public function getReadConnectionService();
 	public function getWriteConnectionService();
+	public function resolveConnectionService($type);
 	// public function getReadConnection();
 	// public function getWriteConnection();
 	// public function setDirtyState($dirtyState);

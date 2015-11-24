@@ -15,6 +15,7 @@ use Thunderhawk\Mvc\Model\Resultset;
 use Thunderhawk\Mvc\Model\MetaData;
 use Thunderhawk\Di\Container;
 use Thunderhawk\Db\Thunderhawk\Db;
+use Thunderhawk\Mvc\Model\Criteria;
 
 require '../src/core/Autoloader.php';
 $loader = new Autoloader ( '../src/' );
@@ -84,14 +85,9 @@ class Users extends Model {
 
 }
 
-$user = Users::findFirst(126);
-var_dump($user->save(array(
-		'username' => 'pippo5',
-		'password' => 'test'
-),array(
-		'username','password'
-)));
-
-var_dump($user);
-
-
+$users = Users::query()
+->where("username = :username")
+->bind(array(':username'=>'foo'))
+->bindTypes(array(':username'=>\PDO::PARAM_STR))
+->execute();
+var_dump($users);
