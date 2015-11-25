@@ -202,20 +202,23 @@ class Model implements InjectionInterface, ModelInterface, \Serializable {
 		return $this->_connections [self::CON_GLOBAL];
 	}
 	public function getReadConnectionService() {
-		return $this->_connections [self::CON_READ];
+		return $this->resolveConnectionService(self::CON_READ);
 	}
 	public function getWriteConnectionService() {
-		return $this->_connections [self::CON_WRITE];
+		return $this->resolveConnectionService(self::CON_WRITE);
 	}
-	public function resolveConnectionService($type) {
-		$con = $this->getConnectionService ();
+	protected function resolveConnectionService($type) {
 		switch ($type){
 			case self::CON_READ:
-				$con = $this->getReadConnectionService() ? $this->getReadConnectionService() : $con ;
+				$con = !is_null($this->_connections[self::CON_READ]) ? $this->_connections[self::CON_READ] : $this->getConnectionService() ;
+				//$con = $this->getReadConnectionService() ? $this->getReadConnectionService() : $con ;
 				break;
 			case self::CON_WRITE:
-				$con = $this->getWriteConnectionService() ? $this->getWriteConnectionService() : $con ;
+				$con = !is_null($this->_connections[self::CON_WRITE]) ? $this->_connections[self::CON_WRITE] : $this->getConnectionService() ;
+				//$con = $this->getWriteConnectionService() ? $this->getWriteConnectionService() : $con ;
 				break;
+			default:
+				$con = $this->getConnectionService ();
 		}
 		return $con ;
 	}

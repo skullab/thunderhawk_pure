@@ -6,8 +6,11 @@ use Thunderhawk\Mvc\Model\Criteria\CriteriaInterface;
 use Thunderhawk\Mvc\Model;
 use Thunderhawk\Db\Database;
 use Thunderhawk\Mvc\Model\Resultset;
+use Thunderhawk\Di\InjectionInterface;
+use Thunderhawk\Di\ContainerInterface;
 
-class Criteria implements CriteriaInterface {
+class Criteria implements CriteriaInterface,InjectionInterface {
+	
 	const APEX = "`";
 	const SELECT = "SELECT ";
 	const FROM = " FROM ";
@@ -118,6 +121,7 @@ class Criteria implements CriteriaInterface {
 			'limit' => null,
 			'offset' => null
 	);
+	protected $_di ;
 	
 	public function __construct(ModelInterface $model = null){
 		if(!is_null($model)){
@@ -374,15 +378,27 @@ class Criteria implements CriteriaInterface {
 		$this->getWhere();
 		return str_replace("  ", " ",$this->_query);
 	}
+	public function setDi(ContainerInterface $di) {
+		$this->_di = $di ;
+	}
+	
+	public function getDi() {
+		return $this->_di ;
+	}
 	/**
 	 * {@inheritDoc}
 	 * @see \Thunderhawk\Mvc\Model\Criteria\CriteriaInterface::execute()
 	 */
 	public function execute() {
+		
 		if($this->_model){
-			$statement = $this->_model->resolveConnectionService(Model::CON_READ)->prepare($this->resolveQuery());
-			$statement->setFetchMode(Database::FETCH_CLASS | Database::FETCH_PROPS_LATE,get_class($this->_model));
+			$statement = $this->_model->getReadConnectionService()->prepare($this->resolveQuery());
 			if($statement === false)return false ;
+			$statement->setFetchMode(Database::FETCH_CLASS | Database::FETCH_PROPS_LATE,get_class($this->_model));
+		}else{
+			$statement = $this->getDi()->db->prepare($this->resolveQuery());
+			if($statement === false)return false ;
+		}
 			var_dump($statement);
 			foreach ($this->getParams() as $placeholder => $param){
 				if(is_numeric($placeholder))$placeholder++;
@@ -400,7 +416,7 @@ class Criteria implements CriteriaInterface {
 			}
 			$statement->closeCursor();
 			return $resultset ;
-		}
+		
 	}
 
 }

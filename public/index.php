@@ -16,6 +16,7 @@ use Thunderhawk\Mvc\Model\MetaData;
 use Thunderhawk\Di\Container;
 use Thunderhawk\Db\Thunderhawk\Db;
 use Thunderhawk\Mvc\Model\Criteria;
+use Thunderhawk\Mvc\Model\Query;
 
 require '../src/core/Autoloader.php';
 $loader = new Autoloader ( '../src/' );
@@ -85,9 +86,8 @@ class Users extends Model {
 
 }
 
-$users = Users::query()
-->where("username = :username")
-->bind(array(':username'=>'foo'))
-->bindTypes(array(':username'=>\PDO::PARAM_STR))
-->execute();
-var_dump($users);
+$query = new Query();
+$query->setDi($di);
+$query->create("UPDATE users SET username = 'testing'")->where('id = 139');
+$response = $query->execute();
+var_dump($response);
