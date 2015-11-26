@@ -88,6 +88,7 @@ class Users extends Model {
 
 $query = new Query();
 $query->setDi($di);
-$query->create("UPDATE users SET username = 'testing'")->where('id = 139');
+$query->setModelName('users');
+$query->delete()->where('id = 19');
 $response = $query->execute();
-var_dump($response);
+var_dump($response,$query->lastId());

@@ -10,6 +10,7 @@ use Thunderhawk\Mvc\Model\MetaData;
 use Thunderhawk\Db\Database;
 use Thunderhawk\Mvc\Model\Resultset;
 use Thunderhawk\Mvc\Model\Criteria;
+use Thunderhawk\Mvc\Model\Query;
 
 class Model implements InjectionInterface, ModelInterface, \Serializable {
 	//
@@ -346,7 +347,17 @@ class Model implements InjectionInterface, ModelInterface, \Serializable {
 		if($this->getPrimaryKey())return $this->update($data,$whiteList);
 		return $this->create($data,$whiteList);
 	}
-	
+	public function _create(array $data = null, array $whiteList = null){
+		$record = $data ? $data : $this->_record ;
+		$interrupt = $this->onCreate($record);
+		if($interrupt === false)return false;
+		if(is_array($interrupt))$record = $interrupt ;
+		
+		$names = $whiteList ? $whiteList : array_keys($record) ;
+		$bindCount = count($names) ;
+		$query = new Query($this);
+		$query->insert($columns)
+	}
 	public function create(array $data = null, array $whiteList = null) {
 		
 		$record = $data ? $data : $this->_record ;
