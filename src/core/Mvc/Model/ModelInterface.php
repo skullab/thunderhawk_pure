@@ -31,7 +31,7 @@ interface ModelInterface {
 	// public function fireEventCancel($eventName);
 	// public function appendMessage($message);
 	// public function validationHasFailed();
-	// public function getMessages();
+	public function getMessages();
 	public function save(array $data, array $whiteList);
 	public function create(array $data, array $whiteList);
 	public function update(array $data, array $whiteList);
@@ -43,4 +43,5 @@ interface ModelInterface {
 	// public function setSnapshotData($data, $columnMap);
 	public function reset();
 	public function toArray(array $columns = array());
+	public function equal(ModelInterface $model);
 }

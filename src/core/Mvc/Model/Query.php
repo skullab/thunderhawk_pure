@@ -37,7 +37,7 @@ class Query extends Criteria implements QueryInterface{
 		$this->_query = self::INSERT_INTO.$this->getModelName() ;
 		
 		if(!empty($values)){
-			$columns = array_combine($columns, $values);
+			$columns = array_combine(array_keys($columns), $values);
 		}
 		
 		$this->_query .= " (" ;
@@ -46,6 +46,7 @@ class Query extends Criteria implements QueryInterface{
 		}
 		$this->_query = rtrim($this->_query,",").")".self::VALUES."(";
 		foreach ($columns as $column => $value){
+			$value = is_null($value) ? 'NULL' : $value ;
 			$this->_query .= "$value,";
 		}
 		$this->_query = rtrim($this->_query,",").")";
@@ -55,9 +56,10 @@ class Query extends Criteria implements QueryInterface{
 	public function update(array $columns,array $values = array()){
 		$this->_query = self::UPDATE.$this->getModelName().self::SET ;
 		if(!empty($values)){
-			$columns = array_combine($columns, $values);
+			$columns = array_combine(array_keys($columns), $values);
 		}
 		foreach ($columns as $column => $value){
+			$value = is_null($value) ? 'NULL' : $value ;
 			$this->_query .= "$column=$value,";
 		}
 		$this->_query = rtrim($this->_query,",");

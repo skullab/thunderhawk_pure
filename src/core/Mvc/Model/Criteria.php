@@ -182,6 +182,9 @@ class Criteria implements CriteriaInterface, InjectionInterface {
 	 * logical AND operator
 	 */
 	const LOGICAL_AND = " AND ";
+	protected $_messages = array();
+	protected $_errorCode = '00000' ;
+	
 	protected $_query;
 	protected $_model;
 	protected $_modelName;
@@ -245,6 +248,7 @@ class Criteria implements CriteriaInterface, InjectionInterface {
 	 */
 	public function bindTypes(array $bindTypes) {
 		$this->_bindTypes = array_merge ( $this->_bindTypes, $bindTypes );
+		var_dump($this->_bindTypes);
 		return $this;
 	}
 	public function distinct($flag) {
@@ -295,10 +299,14 @@ class Criteria implements CriteriaInterface, InjectionInterface {
 	 *
 	 * @see \Thunderhawk\Mvc\Model\Criteria\CriteriaInterface::limit()
 	 */
+	public function offset($offset){
+		$this->_limit['offset'] = (int)$offset;
+		return $this ;
+	}
 	public function limit($limit, $offset = false) {
 		$this->_limit ['limit'] = ( int ) $limit;
 		if ($offset !== false)
-			$this->_limit ['offset'] = ( int ) $offset;
+			return $this->offset($offset);
 		return $this;
 	}
 	
@@ -504,6 +512,15 @@ class Criteria implements CriteriaInterface, InjectionInterface {
 	 *
 	 * @see \Thunderhawk\Mvc\Model\Criteria\CriteriaInterface::execute()
 	 */
+	public function getLastConnection(){
+		return $this->_lastConnection ;
+	}
+	public function getErrorMessages(){
+		return $this->_messages ;
+	}
+	public function getErrorCode(){
+		return $this->_errorCode ;
+	}
 	public function execute($write = false) {
 		if ($this->_model) {
 			$this->_lastConnection = $write ? $this->_model->getWriteConnectionService() : $this->_model->getReadConnectionService ();
@@ -518,16 +535,28 @@ class Criteria implements CriteriaInterface, InjectionInterface {
 		}
 		var_dump ( $statement );
 		foreach ( $this->getParams () as $placeholder => $param ) {
-			if (is_numeric ( $placeholder ))
-				$placeholder ++;
-			$type = array_key_exists ( $placeholder, $this->getTypes () ) ? $this->getTypes () [$placeholder] : \PDO::PARAM_STR;
+			
+			$type = array_key_exists ( $placeholder, $this->getTypes () ) ? $this->getTypes () [$placeholder] : Model::TYPE_STRING;
 			var_dump ( $type );
+			
+			if(is_null($param)){
+				//$param = 'NULL' ;
+				$type = Model::TYPE_NULL ;
+				var_dump('is null',$param,$type);
+			}
+			
+			if (is_numeric ( $placeholder ))$placeholder ++;
 			$statement->bindValue ( $placeholder, $param, $type );
 		}
 		
 		$response = $statement->execute ();
-		if ($response === false)
+		$this->_messages = $statement->errorInfo();
+		$this->_errorCode = $statement->errorCode();
+		
+		if ($response === false){
 			return false;
+		}
+		
 		$resultset = new Resultset ();
 		while ( $obj = $statement->fetch () ) {
 			$obj->reset ();

@@ -17,6 +17,7 @@ use Thunderhawk\Di\Container;
 use Thunderhawk\Db\Thunderhawk\Db;
 use Thunderhawk\Mvc\Model\Criteria;
 use Thunderhawk\Mvc\Model\Query;
+use Thunderhawk\Mvc\Model\Message;
 
 require '../src/core/Autoloader.php';
 $loader = new Autoloader ( '../src/' );
@@ -50,8 +51,11 @@ class Users extends Model {
 	private $username ;
 	private $password ;
 	
+	public static function validate($username,$password){
+		
+	}
 	protected function setUsername($value){
-		var_dump('call me');
+		var_dump('call me',$value);
 		$this->username = 'mister '.$value ;
 	}
 	public function getUsername(){
@@ -68,11 +72,22 @@ class Users extends Model {
 		return $di ;
 	}
 	protected function onCreate($record){
-		$record['username'] = 'cambio user' ;
+		/*$record['username'] = 'cambio user' ;
 		$record['password'] = 'cambio la password' ;
-		return $record ;
+		return $record ;*/
 	}
 	
+	/* (non-PHPdoc)
+	 * @see \Thunderhawk\Mvc\Model::onCreateFails()
+	 */
+	protected function onCreateFails($record, $query) {
+		$message = new Message('User creation fails !');
+		$message->setErrorInfo($query->getErrorMessages());
+		$this->appendMessage($message);
+	}
+	protected function onCreateSucces(){
+		$this->appendMessage(new Message('User creates successful !'));
+	}
 	protected function onUpdate($recordDiff) {
 		var_dump($recordDiff);
 
@@ -86,9 +101,12 @@ class Users extends Model {
 
 }
 
-$query = new Query();
-$query->setDi($di);
-$query->setModelName('users');
-$query->delete()->where('id = 19');
-$response = $query->execute();
-var_dump($response,$query->lastId());
+$user = Users::findFirst(array(
+		'username = :username AND password = :password',
+		'bind' => array(
+				':username' => 'mister bla bla',
+				':password' => crypt('secret'),
+		)
+));
+
+var_dump($user);

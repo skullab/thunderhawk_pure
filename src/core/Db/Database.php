@@ -146,6 +146,13 @@ class Database extends ContainerInjection {
 		}
 		return rtrim($imploded,$separator);
 	}
+	public static function explodeBindValues($numbers){
+		$exploded = array();
+		for($i=0;$i<$numbers;$i++){
+			$exploded[] = '?' ;
+		}
+		return $exploded ;
+	}
 	public function execute($statement){
 		return $this->getPDO()->exec($statement);
 	}
