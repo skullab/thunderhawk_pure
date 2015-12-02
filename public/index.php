@@ -25,88 +25,96 @@ $loader->registerNamespaces ( array (
 		'Thunderhawk' => 'core/',
 		'Thunderhawk\Plugin' => 'plugins/',
 		'Thunderhawk\Module' => 'modules/' 
-) )->register();
-/************************************************************************************/
-/*									TEST AREA 										*/
-/************************************************************************************/
-$info = array(
-		'tag'		=> 'master',
-		'prefix'	=> 'mysql',
-		'dbname'	=> 'thunderhawk',
-		'host'		=> 'localhost',
-		'user'		=>	'root',
-		'password'	=> '',
-		'options'	=> array(Database::OPT_ERRMODE,Database::ERRMODE_SILENT)
+) )->register ();
+/**
+ * *********************************************************************************
+ */
+/* TEST AREA */
+/**
+ * *********************************************************************************
+ */
+$info = array (
+		'tag' => 'master',
+		'prefix' => 'mysql',
+		'dbname' => 'thunderhawk',
+		'host' => 'localhost',
+		'user' => 'root',
+		'password' => '',
+		'options' => array (
+				Database::OPT_ERRMODE,
+				Database::ERRMODE_SILENT 
+		) 
 );
 
-
-$di = new Container();
-$di->set('db', function($di) use($info){
-	return new Database($info);
-});
-
+$di = new Container ();
+$di->set ( 'db', function ($di) use($info) {
+	return new Database ( $info );
+} );
 class Users extends Model {
+	private $id;
+	private $username;
+	private $password;
+	public static function validate($username, $password) {
+	}
+	protected function setUsername($value) {
+		var_dump ( 'call me', $value );
+		$this->username = 'mister ' . $value;
+	}
+	public function getUsername() {
+		return $this->username;
+	}
+	protected function getPassword() {
+		return $this->password;
+	}
+	protected function setPassword($value) {
+		$this->password = crypt ( $value );
+	}
+	public function getDi() {
+		global $di;
+		return $di;
+	}
+	protected function onCreate($record) {
+		foreach ( $record as $key => $value ) {
+			if(is_null($value) && $key != 'id'){
+				$record[$key] = 'default' ;
+			}
+		}
+		return $record ;
+	}
 	
-	private $id ;
-	private $username ;
-	private $password ;
-	
-	public static function validate($username,$password){
-		
-	}
-	protected function setUsername($value){
-		var_dump('call me',$value);
-		$this->username = 'mister '.$value ;
-	}
-	public function getUsername(){
-		return $this->username ;
-	}
-	protected function getPassword(){
-		return $this->password ;
-	}
-	protected function setPassword($value){
-		$this->password = crypt($value) ;
-	}
-	public function getDi(){
-		global $di ;
-		return $di ;
-	}
-	protected function onCreate($record){
-		/*$record['username'] = 'cambio user' ;
-		$record['password'] = 'cambio la password' ;
-		return $record ;*/
-	}
-	
-	/* (non-PHPdoc)
+	/*
+	 * (non-PHPdoc)
 	 * @see \Thunderhawk\Mvc\Model::onCreateFails()
 	 */
 	protected function onCreateFails($record, $query) {
-		$message = new Message('User creation fails !');
-		$message->setErrorInfo($query->getErrorMessages());
-		$this->appendMessage($message);
+		$message = new Message ( 'User creation fails !' );
+		$message->setErrorInfo ( $query->getErrorMessages () );
+		$this->appendMessage ( $message );
 	}
-	protected function onCreateSucces(){
-		$this->appendMessage(new Message('User creates successful !'));
+	protected function onCreateSucces() {
+		$this->appendMessage ( new Message ( 'User creates successful !' ) );
 	}
 	protected function onUpdate($recordDiff) {
-		var_dump($recordDiff);
-
+		var_dump ( $recordDiff );
 	}
-	
-	
 	protected function onDelete($record) {
-		var_dump('deleting -> '.$record['id']);
+		var_dump ( 'deleting -> ' . $record ['id'] );
+		// return false ;
 	}
-
-
 }
 
-$user = Users::findFirst(array(
-		'username = :username AND password = :password',
-		'bind' => array(
-				':username' => 'mister bla bla',
-				':password' => crypt('secret'),
-		)
-));
+class NoCode extends Model{
+	
+	protected function getPrimaryKeyName(){
+		return 'abc' ;
+	}
+	public function getDi() {
+		global $di;
+		return $di;
+	}
+}
 
+$user = new Users();
+var_dump($user->save(array('username'=>'testing user')));
 var_dump($user);
+

@@ -189,6 +189,7 @@ class Criteria implements CriteriaInterface, InjectionInterface {
 	protected $_model;
 	protected $_modelName;
 	protected $_distinct;
+	protected $_columns;
 	protected $_bindParams = array ();
 	protected $_bindTypes = array ();
 	protected $_conditions;
@@ -252,8 +253,12 @@ class Criteria implements CriteriaInterface, InjectionInterface {
 		return $this;
 	}
 	public function distinct($flag) {
-		$this->_distinct = ( string ) $flag;
+		$this->_distinct = self::DISTINCT.$flag;
 		return $this;
+	}
+	public function columns($columns){
+		$this->_columns = (string)$columns;
+		return $this ;
 	}
 	/**
 	 *
@@ -273,7 +278,47 @@ class Criteria implements CriteriaInterface, InjectionInterface {
 	 * @see \Thunderhawk\Mvc\Model\Criteria\CriteriaInterface::conditions()
 	 */
 	public function conditions($conditions) {
-		$this->_conditions = ( string ) $conditions;
+		if(is_null($conditions))return $this ;
+		
+		if(is_string($conditions)){
+			$this->_conditions = ( string ) $conditions;
+		}else if(is_array($conditions)){
+			$_c = false ;
+			if(isset($conditions[0]) || ($_c = isset($conditions['conditions']) ? $conditions['conditions'] : false)){
+				$_c = $_c !== false ? $_C : $conditions[0] ;
+				$this->where($_c);
+			}
+			if(isset($conditions['distinct']) && is_string($conditions['distinct'])){
+				$this->distinct($conditions['distinct']);
+			}
+			if(isset($conditions['columns']) && is_string($conditions['columns'])){
+				$this->columns($conditions['columns']);
+			}
+			if(isset($conditions['bind']) && is_array($conditions['bind'])){
+				$this->bind($conditions['bind']);
+			}
+			if(isset($conditions['bindTypes']) && is_array($conditions['bindTypes'])){
+				$this->bindTypes($conditions['bindTypes']);
+			}
+			if(isset($conditions['order']) && is_string($conditions['order'])){
+				$this->orderBy($conditions['order']);
+			}
+			if(isset($conditions['limit'])){
+				$this->limit($conditions['limit']);
+			}
+			if(isset($conditions['offset'])){
+				$this->offset($conditions['offset']);
+			}
+			if(isset($conditions['group']) && is_string($conditions['group'])){
+				$this->groupBy($conditions['group']);
+			}
+			if(isset($conditions['for_update']) && $conditions['for_update'] === true){
+				$this->forUpdate();
+			}
+			if(isset($conditions['shared_lock']) && $conditions['shared_lock'] === true){
+				$this->sharedLock();
+			}
+		}
 		return $this;
 	}
 	
@@ -490,13 +535,21 @@ class Criteria implements CriteriaInterface, InjectionInterface {
 		return $this->_bindTypes;
 	}
 	public function getDistinct() {
-		return (! is_null ( $this->_distinct ) ? $this->_distinct : self::ALL_ASTERIX);
+		return $this->_distinct ;
+		//return (! is_null ( $this->_distinct ) ? $this->_distinct : self::ALL_ASTERIX);
+	}
+	public function getColumns(){
+		return $this->_columns ;
+		//return (! is_null ( $this->_columns ) ? $this->_columns : null);
+	}
+	public function getWhat(){
+		return (!is_null($this->getDistinct())? $this->getDistinct() : (!is_null($this->getColumns())?$this->getColumns():self::ALL_ASTERIX));
 	}
 	public function stripString($str) {
 		return trim(str_replace ( "  ", " ", $str ));
 	}
 	public function resolveQuery() {
-		$this->_query = self::SELECT . $this->getDistinct () . self::FROM . $this->getModelName () . $this->getWhere ();
+		$this->_query = self::SELECT . $this->getWhat().self::FROM . $this->getModelName () . $this->getWhere ();
 		// return rtrim(ltrim(str_replace(" ", " ",$this->_query)," ")," ");
 		return $this->stripString ( $this->_query );
 	}
@@ -512,7 +565,14 @@ class Criteria implements CriteriaInterface, InjectionInterface {
 	 *
 	 * @see \Thunderhawk\Mvc\Model\Criteria\CriteriaInterface::execute()
 	 */
-	public function getLastConnection(){
+	public function getLastConnection($write = false){
+		if($this->_lastConnection == null){
+			if ($this->_model) {
+				$this->_lastConnection = $write ? $this->_model->getWriteConnectionService() : $this->_model->getReadConnectionService ();
+			} else {
+				$this->_lastConnection = $this->getDi ()->db;
+			}
+		}
 		return $this->_lastConnection ;
 	}
 	public function getErrorMessages(){
@@ -521,23 +581,18 @@ class Criteria implements CriteriaInterface, InjectionInterface {
 	public function getErrorCode(){
 		return $this->_errorCode ;
 	}
-	public function execute($write = false) {
-		if ($this->_model) {
-			$this->_lastConnection = $write ? $this->_model->getWriteConnectionService() : $this->_model->getReadConnectionService ();
-		} else {
-			$this->_lastConnection = $this->getDi ()->db;
-		}
-		$statement = $this->_lastConnection->prepare ( $this->resolveQuery () );
+	public function executeRow($write = false){
+		return $this->execute($write,true);
+	}
+	public function execute($write = false,$row = false) {
+		$statement = $this->getLastConnection($write)->prepare ( $this->resolveQuery () );
 		if ($statement === false)
 			return false;
-		if ($this->_model) {
-			$statement->setFetchMode ( Database::FETCH_CLASS | Database::FETCH_PROPS_LATE, get_class ( $this->_model ) );
-		}
-		var_dump ( $statement );
+		
 		foreach ( $this->getParams () as $placeholder => $param ) {
 			
 			$type = array_key_exists ( $placeholder, $this->getTypes () ) ? $this->getTypes () [$placeholder] : Model::TYPE_STRING;
-			var_dump ( $type );
+			//var_dump ( $type );
 			
 			if(is_null($param)){
 				//$param = 'NULL' ;
@@ -550,6 +605,8 @@ class Criteria implements CriteriaInterface, InjectionInterface {
 		}
 		
 		$response = $statement->execute ();
+		$statement->debugDumpParams();
+		
 		$this->_messages = $statement->errorInfo();
 		$this->_errorCode = $statement->errorCode();
 		
@@ -557,6 +614,13 @@ class Criteria implements CriteriaInterface, InjectionInterface {
 			return false;
 		}
 		
+		if($row)return $statement ;
+		
+		if ($this->_model) {
+			$statement->setFetchMode ( Database::FETCH_CLASS | Database::FETCH_PROPS_LATE, get_class ( $this->_model ) );
+		}
+		
+		var_dump ( $statement );
 		$resultset = new Resultset ();
 		while ( $obj = $statement->fetch () ) {
 			$obj->reset ();

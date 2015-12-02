@@ -131,9 +131,9 @@ class MetaData implements InjectionInterface{
 		}
 		return false ;
 	}
-	public function getUniqueKeysName(){
+	public function getUniqueKeyName(){
 		if(array_key_exists(self::UNIQUE_KEY, $this->retrieveKeys())){
-			return $this->retrieveKeys()[self::UNIQUE_KEY];
+			return $this->retrieveKeys()[self::UNIQUE_KEY][0];
 		}
 		return false ;
 	}

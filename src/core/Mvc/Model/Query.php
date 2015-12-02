@@ -29,9 +29,9 @@ class Query extends Criteria implements QueryInterface{
 		$this->_query = (string)$sql ;
 		return $this ;
 	}
-	public function lastId(){
+	public function lastId($name = null){
 		$this->_lastConnection = $this->_lastConnection ? $this->_lastConnection : $this->getDi()->db ;
-		return $this->_lastConnection->lastId();
+		return $this->_lastConnection->lastId($name);
 	}
 	public function insert(array $columns,array $values = array()){
 		$this->_query = self::INSERT_INTO.$this->getModelName() ;
