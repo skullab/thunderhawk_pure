@@ -18,6 +18,8 @@ use Thunderhawk\Db\Thunderhawk\Db;
 use Thunderhawk\Mvc\Model\Criteria;
 use Thunderhawk\Mvc\Model\Query;
 use Thunderhawk\Mvc\Model\Message;
+use Thunderhawk\Filter\StripTags;
+use Thunderhawk\Filter;
 
 require '../src/core/Autoloader.php';
 $loader = new Autoloader ( '../src/' );
@@ -114,7 +116,8 @@ class NoCode extends Model{
 	}
 }
 
-$user = new Users();
-var_dump($user->save(array('username'=>'testing user')));
-var_dump($user);
+$filter = new Filter();
+$s = $filter->sanitize('<h1>HelloWorld<h1>',array('string','underscore'));
+var_dump($s);
+
 
