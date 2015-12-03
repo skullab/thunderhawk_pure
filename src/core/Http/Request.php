@@ -8,7 +8,53 @@ use Thunderhawk\Di\ContainerInterface;
 use Thunderhawk\Filter;
 
 class Request implements InjectionInterface, RequestInterface {
-	
+	/**
+	 * Contents of the Accept: header from the current request, if there is one.
+	 */
+	const HTTP_ACCEPT = 'Accept';
+	/**
+	 * Contents of the Accept-Charset: header from the current request, if there is one.
+	 * Example: 'iso-8859-1,*,utf-8'.
+	 */
+	const HTTP_ACCEPT_CHARSET = 'Accept-Charset';
+	/**
+	 * Contents of the Accept-Encoding: header from the current request, if there is one.
+	 * Example: 'gzip'.
+	 */
+	const HTTP_ACCEPT_ENCODING = 'Accept-Encoding';
+	/**
+	 * Contents of the Accept-Language: header from the current request, if there is one.
+	 * Example: 'en'.
+	 */
+	const HTTP_ACCEPT_LANGUAGE = 'Accept-Language';
+	/**
+	 * Contents of the Connection: header from the current request, if there is one.
+	 * Example: 'Keep-Alive'.
+	 */
+	const HTTP_CONNECTION = 'Connection';
+	const HTTP_CACHE_CONTROL = 'Cache-Control';
+	const HTTP_UPGRADE_INSECURE_REQUESTS = 'Upgrade-Insecure-Requests';
+	/**
+	 * Contents of the Host: header from the current request, if there is one.
+	 */
+	const HTTP_HOST = 'Host';
+	/**
+	 * The address of the page (if any) which referred the user agent to the current page.
+	 *
+	 * This is set by the user agent. Not all user agents will set this,
+	 * and some provide the ability to modify HTTP_REFERER as a feature.
+	 * In short, it cannot really be trusted.
+	 */
+	const HTTP_REFERER = 'Referer';
+	/**
+	 * Contents of the User-Agent: header from the current request, if there is one.
+	 *
+	 * This is a string denoting the user agent being which is accessing the page.
+	 * A typical example is: Mozilla/4.5 [en] (X11; U; Linux 2.2.9 i586).
+	 * Among other things, you can use this value with get_browser() to tailor your page's output
+	 * to the capabilities of the user agent.
+	 */
+	const HTTP_USER_AGENT = 'User-Agent';
 	const GET = 'GET';
 	const POST = 'POST';
 	const PUT = 'PUT';
@@ -16,12 +62,16 @@ class Request implements InjectionInterface, RequestInterface {
 	const HEAD = 'HEAD';
 	const DELETE = 'DELETE';
 	const OPTIONS = 'OPTIONS';
-	const REQUEST = 'REQUEST' ;
+	const REQUEST = 'REQUEST';
 	protected $_di;
-	protected $_filter ;
-	
-	public function __construct(){
-		$this->_filter = $this->getDi()->serviceExist('filter') ? $this->getDi()->filter : new Filter() ;
+	protected $_filter;
+	public function __construct(ContainerInterface $di = null) {
+		if (! is_null ( $di )) {
+			$this->setDi ( $di );
+		} else {
+			// GET FROM GLOBAL APP
+		}
+		$this->_filter = $this->getDi ()->serviceExist ( 'filter' ) ? $this->getDi ()->filter : new Filter ();
 	}
 	public function setDi(ContainerInterface $di) {
 		$this->_di = $di;
@@ -35,7 +85,7 @@ class Request implements InjectionInterface, RequestInterface {
 	 * @see \Thunderhawk\Http\Request\RequestInterface::get()
 	 */
 	public function get($name, $filters = null, $defaultValue = null) {
-		return $this->getHelper(self::REQUEST, $name,$filters,$defaultValue);
+		return $this->getHelper ( self::REQUEST, $name, $filters, $defaultValue );
 	}
 	
 	/*
@@ -43,7 +93,7 @@ class Request implements InjectionInterface, RequestInterface {
 	 * @see \Thunderhawk\Http\Request\RequestInterface::getPost()
 	 */
 	public function getPost($name, $filters = null, $defaultValue = null) {
-		return $this->getHelper(self::POST, $name,$filters,$defaultValue);
+		return $this->getHelper ( self::POST, $name, $filters, $defaultValue );
 	}
 	
 	/*
@@ -51,31 +101,31 @@ class Request implements InjectionInterface, RequestInterface {
 	 * @see \Thunderhawk\Http\Request\RequestInterface::getQuery()
 	 */
 	public function getQuery($name, $filters = null, $defaultValue = null) {
-		return $this->getHelper(self::GET, $name,$filters,$defaultValue);
+		return $this->getHelper ( self::GET, $name, $filters, $defaultValue );
 	}
 	public function getHelper($source, $name, $filters = null, $defaultValue = null) {
-		$value = null ;
+		$value = null;
 		switch ($source) {
 			case self::GET :
-				$value = isset($_GET[$name]) ? $_GET[$name] : (is_null($defaultValue) ? null : $defaultValue);
+				$value = isset ( $_GET [$name] ) ? $_GET [$name] : (is_null ( $defaultValue ) ? null : $defaultValue);
 				break;
 			case self::POST :
-				$value = isset($_POST[$name]) ? $_POST[$name] : (is_null($defaultValue) ? null : $defaultValue);
+				$value = isset ( $_POST [$name] ) ? $_POST [$name] : (is_null ( $defaultValue ) ? null : $defaultValue);
 				break;
 			case self::PUT :
-				//TODO
+				// TODO
 				break;
 			default :
-				$value = isset($_REQUEST[$name]) ? $_REQUEST[$name] : (is_null($defaultValue) ? null : $defaultValue);
+				$value = isset ( $_REQUEST [$name] ) ? $_REQUEST [$name] : (is_null ( $defaultValue ) ? null : $defaultValue);
 		}
-		return is_null($filters) ? $value : $this->_filter->sanitize($value, $filters);
+		return is_null ( $filters ) ? $value : $this->_filter->sanitize ( $value, $filters );
 	}
 	/*
 	 * (non-PHPdoc)
 	 * @see \Thunderhawk\Http\Request\RequestInterface::getServer()
 	 */
 	public function getServer($name) {
-		return $_SERVER[$name];
+		return $_SERVER [$name];
 	}
 	
 	/*
@@ -83,7 +133,7 @@ class Request implements InjectionInterface, RequestInterface {
 	 * @see \Thunderhawk\Http\Request\RequestInterface::has()
 	 */
 	public function has($name) {
-		return isset($_REQUEST[$name]);
+		return isset ( $_REQUEST [$name] );
 	}
 	
 	/*
@@ -91,7 +141,7 @@ class Request implements InjectionInterface, RequestInterface {
 	 * @see \Thunderhawk\Http\Request\RequestInterface::hasPost()
 	 */
 	public function hasPost($name) {
-		return isset($_POST[$name]);
+		return isset ( $_POST [$name] );
 	}
 	
 	/*
@@ -107,7 +157,7 @@ class Request implements InjectionInterface, RequestInterface {
 	 * @see \Thunderhawk\Http\Request\RequestInterface::hasQuery()
 	 */
 	public function hasQuery($name) {
-		return isset($_GET[$name]);
+		return isset ( $_GET [$name] );
 	}
 	
 	/*
@@ -115,7 +165,7 @@ class Request implements InjectionInterface, RequestInterface {
 	 * @see \Thunderhawk\Http\Request\RequestInterface::hasServer()
 	 */
 	public function hasServer($name) {
-		return isset($_SERVER[$name]);
+		return isset ( $_SERVER [$name] );
 	}
 	
 	/*
@@ -123,7 +173,8 @@ class Request implements InjectionInterface, RequestInterface {
 	 * @see \Thunderhawk\Http\Request\RequestInterface::getHeader()
 	 */
 	public function getHeader($header) {
-		// TODO: Auto-generated method stub
+		$headers = getallheaders ();
+		return isset ( $headers [$header] ) ? $headers [$header] : null;
 	}
 	
 	/*
@@ -131,7 +182,7 @@ class Request implements InjectionInterface, RequestInterface {
 	 * @see \Thunderhawk\Http\Request\RequestInterface::getScheme()
 	 */
 	public function getScheme() {
-		// TODO: Auto-generated method stub
+		return isset ( $_SERVER ['REQUEST_SCHEME'] ) ? $_SERVER ['REQUEST_SCHEME'] : null;
 	}
 	
 	/*
@@ -139,7 +190,7 @@ class Request implements InjectionInterface, RequestInterface {
 	 * @see \Thunderhawk\Http\Request\RequestInterface::isAjax()
 	 */
 	public function isAjax() {
-		// TODO: Auto-generated method stub
+		return (! empty ( $_SERVER ['HTTP_X_REQUESTED_WITH'] ) && strtolower ( $_SERVER ['HTTP_X_REQUESTED_WITH'] ) == 'xmlhttprequest');
 	}
 	
 	/*
@@ -155,7 +206,7 @@ class Request implements InjectionInterface, RequestInterface {
 	 * @see \Thunderhawk\Http\Request\RequestInterface::isSecureRequest()
 	 */
 	public function isSecureRequest() {
-		// TODO: Auto-generated method stub
+		return (isset ( $_SERVER ['HTTPS'] ) && ! empty ( $_SERVER ['HTTPS'] ) && $_SERVER ['HTTPS'] !== 'off');
 	}
 	
 	/*
@@ -163,7 +214,11 @@ class Request implements InjectionInterface, RequestInterface {
 	 * @see \Thunderhawk\Http\Request\RequestInterface::getRawBody()
 	 */
 	public function getRawBody() {
-		// TODO: Auto-generated method stub
+		$body = '';
+		foreach ( getallheaders () as $name => $value ) {
+			$body .= "$name : $value \n";
+		}
+		return $body;
 	}
 	
 	/*
@@ -171,7 +226,7 @@ class Request implements InjectionInterface, RequestInterface {
 	 * @see \Thunderhawk\Http\Request\RequestInterface::getServerAddress()
 	 */
 	public function getServerAddress() {
-		// TODO: Auto-generated method stub
+		return $_SERVER ['SERVER_ADDR'];
 	}
 	
 	/*
@@ -179,7 +234,7 @@ class Request implements InjectionInterface, RequestInterface {
 	 * @see \Thunderhawk\Http\Request\RequestInterface::getServerName()
 	 */
 	public function getServerName() {
-		// TODO: Auto-generated method stub
+		return $_SERVER ['SERVER_NAME'];
 	}
 	
 	/*
@@ -187,7 +242,7 @@ class Request implements InjectionInterface, RequestInterface {
 	 * @see \Thunderhawk\Http\Request\RequestInterface::getHttpHost()
 	 */
 	public function getHttpHost() {
-		// TODO: Auto-generated method stub
+		return $_SERVER ['HTTP_HOST'];
 	}
 	
 	/*
@@ -195,7 +250,7 @@ class Request implements InjectionInterface, RequestInterface {
 	 * @see \Thunderhawk\Http\Request\RequestInterface::getClientAddress()
 	 */
 	public function getClientAddress($trustForwardedHeader = false) {
-		// TODO: Auto-generated method stub
+		return ($trustForwardedHeader ? (isset ( $_SERVER ['HTTP_X_FORWARDED_FOR'] ) ? $_SERVER ['HTTP_X_FORWARDED_FOR'] : $_SERVER ['REMOTE_ADDR']) : $_SERVER ['REMOTE_ADDR']);
 	}
 	
 	/*
@@ -203,7 +258,7 @@ class Request implements InjectionInterface, RequestInterface {
 	 * @see \Thunderhawk\Http\Request\RequestInterface::getMethod()
 	 */
 	public function getMethod() {
-		// TODO: Auto-generated method stub
+		return $_SERVER ['REQUEST_METHOD'];
 	}
 	
 	/*
@@ -211,15 +266,15 @@ class Request implements InjectionInterface, RequestInterface {
 	 * @see \Thunderhawk\Http\Request\RequestInterface::getUserAgent()
 	 */
 	public function getUserAgent() {
-		// TODO: Auto-generated method stub
+		return $_SERVER ['HTTP_USER_AGENT'];
 	}
 	
 	/*
 	 * (non-PHPdoc)
 	 * @see \Thunderhawk\Http\Request\RequestInterface::isMethod()
 	 */
-	public function isMethod($methods, $strict) {
-		// TODO: Auto-generated method stub
+	public function isMethod($methods, $strict = false) {
+		return ($strict ? ($this->getMethod () === $methods) : ($this->getMethod () == $methods));
 	}
 	
 	/*
@@ -227,7 +282,7 @@ class Request implements InjectionInterface, RequestInterface {
 	 * @see \Thunderhawk\Http\Request\RequestInterface::isPost()
 	 */
 	public function isPost() {
-		// TODO: Auto-generated method stub
+		return $this->isMethod ( self::POST, true );
 	}
 	
 	/*
@@ -235,7 +290,7 @@ class Request implements InjectionInterface, RequestInterface {
 	 * @see \Thunderhawk\Http\Request\RequestInterface::isGet()
 	 */
 	public function isGet() {
-		// TODO: Auto-generated method stub
+		return $this->isMethod ( self::GET, true );
 	}
 	
 	/*
@@ -243,7 +298,7 @@ class Request implements InjectionInterface, RequestInterface {
 	 * @see \Thunderhawk\Http\Request\RequestInterface::isPut()
 	 */
 	public function isPut() {
-		// TODO: Auto-generated method stub
+		return $this->isMethod ( self::PUT, true );
 	}
 	
 	/*
@@ -251,7 +306,7 @@ class Request implements InjectionInterface, RequestInterface {
 	 * @see \Thunderhawk\Http\Request\RequestInterface::isHead()
 	 */
 	public function isHead() {
-		// TODO: Auto-generated method stub
+		return $this->isMethod ( self::HEAD, true );
 	}
 	
 	/*
@@ -259,7 +314,7 @@ class Request implements InjectionInterface, RequestInterface {
 	 * @see \Thunderhawk\Http\Request\RequestInterface::isDelete()
 	 */
 	public function isDelete() {
-		// TODO: Auto-generated method stub
+		return $this->isMethod ( self::DELETE, true );
 	}
 	
 	/*
@@ -267,23 +322,36 @@ class Request implements InjectionInterface, RequestInterface {
 	 * @see \Thunderhawk\Http\Request\RequestInterface::isOptions()
 	 */
 	public function isOptions() {
-		// TODO: Auto-generated method stub
+		return $this->isMethod ( self::OPTIONS, true );
 	}
 	
 	/*
 	 * (non-PHPdoc)
 	 * @see \Thunderhawk\Http\Request\RequestInterface::hasFiles()
 	 */
-	public function hasFiles($onlySuccessful) {
-		// TODO: Auto-generated method stub
+	public function hasFiles($onlySuccessful = false) {
+		if (empty ( $_FILES ))
+			return false;
+		if (! $onlySuccessful)
+			return true;
+		foreach ( $_FILES as $file ) {
+			if ($file ['error'] != UPLOAD_ERR_OK)
+				return false;
+		}
 	}
 	
 	/*
 	 * (non-PHPdoc)
 	 * @see \Thunderhawk\Http\Request\RequestInterface::getUploadedFiles()
 	 */
-	public function getUploadedFiles($onlySuccessful) {
-		// TODO: Auto-generated method stub
+	public function getUploadedFiles($onlySuccessful = false) {
+		$files = array ();
+		foreach ( $_FILES as $file ) {
+			$file = $onlySuccessful ? ($file ['error'] == UPLOAD_ERR_OK ? $file : null) : $file;
+			if (! is_null ( $file ))
+				$files [] = $file;
+		}
+		return $files;
 	}
 	
 	/*
@@ -291,15 +359,38 @@ class Request implements InjectionInterface, RequestInterface {
 	 * @see \Thunderhawk\Http\Request\RequestInterface::getHTTPReferer()
 	 */
 	public function getHTTPReferer() {
-		// TODO: Auto-generated method stub
+		return $_SERVER ['HTTP_REFERER'];
 	}
 	
 	/*
 	 * (non-PHPdoc)
 	 * @see \Thunderhawk\Http\Request\RequestInterface::getAcceptableContent()
 	 */
+	public function getContent($target) {
+		var_dump ( $target );
+		$result = array ();
+		$pattern = '/;q=[0-9].[0-9],?/';
+		$count = preg_match_all ( $pattern, $target, $quality );
+		if ($count > 0) {
+			$names = preg_split ( $pattern, $target );
+			
+			for($i = 0; $i < $count; $i ++) {
+				$_names = explode ( ',', $names [$i] );
+				foreach ( $_names as $n ) {
+					$result [$n] = ( float ) str_replace ( ';q=', '', $quality [0] [$i] );
+				}
+			}
+		}else{
+			$keys = explode(',', str_replace(' ','', $target)) ;
+			foreach ($keys as $key){
+				$result[$key] = (float)1 ;
+			}
+			
+		}
+		return $result;
+	}
 	public function getAcceptableContent() {
-		// TODO: Auto-generated method stub
+		return $this->getContent($_SERVER['HTTP_ACCEPT']);
 	}
 	
 	/*
@@ -307,7 +398,10 @@ class Request implements InjectionInterface, RequestInterface {
 	 * @see \Thunderhawk\Http\Request\RequestInterface::getBestAccept()
 	 */
 	public function getBestAccept() {
-		// TODO: Auto-generated method stub
+		$result = $this->getAcceptableContent();
+		arsort($result,SORT_NUMERIC);
+		reset($result);
+		return key($result);
 	}
 	
 	/*

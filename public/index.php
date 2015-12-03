@@ -20,6 +20,7 @@ use Thunderhawk\Mvc\Model\Query;
 use Thunderhawk\Mvc\Model\Message;
 use Thunderhawk\Filter\StripTags;
 use Thunderhawk\Filter;
+use Thunderhawk\Http\Request;
 
 require '../src/core/Autoloader.php';
 $loader = new Autoloader ( '../src/' );
@@ -116,8 +117,10 @@ class NoCode extends Model{
 	}
 }
 
-$filter = new Filter();
-$s = $filter->sanitize('<h1>HelloWorld<h1>',array('string','underscore'));
-var_dump($s);
-
-
+$request = new Request($di);
+$result = $request->getContent($_SERVER['HTTP_ACCEPT_LANGUAGE']);
+$result = array('a'=>0.5,'b'=>0.9,'c'=>0.3,'d'=>0.7);
+arsort($result,SORT_NUMERIC);
+var_dump($result);
+reset($result);
+var_dump(key($result));
