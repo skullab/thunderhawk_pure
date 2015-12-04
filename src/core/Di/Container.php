@@ -11,7 +11,7 @@ class Container implements ContainerInterface {
 	 * @see \Thunderhawk\Di\ContainerInterface::set()
 	 */
 	public function set($name, callable $service, $shared = false, $override = false) {
-		if ($this->serviceExist ( $name ) && !$this->isOverridable($name)) {
+		if ($this->serviceExists ( $name ) && !$this->isOverridable($name)) {
 			$message = sprintf ( 'The service "%s" already exist : You CAN\'T override this service', $name );
 			throw new \InvalidArgumentException ( $message );
 		}
@@ -38,7 +38,7 @@ class Container implements ContainerInterface {
 	 * @see \Thunderhawk\Di\ContainerInterface::get()
 	 */
 	public function get($name) {
-		if (! $this->serviceExist ( $name )) {
+		if (! $this->serviceExists ( $name )) {
 			$message = sprintf ( 'The service "%s" does not exist', $name );
 			throw new \InvalidArgumentException ( $message );
 		}
@@ -53,7 +53,7 @@ class Container implements ContainerInterface {
 		if (isset ( $this->dependencies [$name] ))
 			return $this->dependencies [$name] ['shared'];
 	}
-	public function serviceExist($name) {
+	public function serviceExists($name) {
 		return isset ( $this->dependencies [$name] );
 	}
 	public function __set($name, $service) {

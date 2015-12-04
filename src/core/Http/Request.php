@@ -71,7 +71,7 @@ class Request implements InjectionInterface, RequestInterface {
 		} else {
 			// GET FROM GLOBAL APP
 		}
-		$this->_filter = $this->getDi ()->serviceExist ( 'filter' ) ? $this->getDi ()->filter : new Filter ();
+		$this->_filter = $this->getDi ()->serviceExists ( 'filter' ) ? $this->getDi ()->filter : new Filter ();
 	}
 	public function setDi(ContainerInterface $di) {
 		$this->_di = $di;

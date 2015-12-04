@@ -24,6 +24,7 @@ use Thunderhawk\Http\Response;
 use Thunderhawk\Http\Response\Cookies;
 use Thunderhawk\Filter\String;
 use Thunderhawk\Mvc\Dispatcher;
+use Thunderhawk\Events\Manager as EventsManager ;
 
 
 require '../src/core/Autoloader.php';
@@ -58,10 +59,38 @@ $di->set ( 'db', function ($di) use($info) {
 	return new Database ( $info );
 } );
 
+class MyComponentListener {
+	public function beforeTask($event,$component,$data){
+		echo 'my-component-listener -> '.$event->getType().'<br>' ;
+		echo 'and say : '.$data.'<br>' ;
+		return 'after task response';
+	}
+	public function afterTask($event,$component){
+		echo 'my-component-listener -> '.$event->getType().'<br>' ;
+	}
+}
+class MyComponent {
+	protected $em ;
+	public function __construct(){
+		$this->em = new EventsManager();
+		$this->em->collectResponses(true);
+		$this->em->attach('my-component',new MyComponentListener());
+		$this->em->attach('my-component:custom',function($event){
+			var_dump('fire custom 1');
+			$event->stop();
+		});
+		$this->em->attach('my-component:custom',function($event){
+				var_dump('fire custom 2');
+		});
+	}
+	public function task(){
+		$this->em->fire('my-component:custom',null);
+		$this->em->fire('my-component:beforeTask', $this,'hello world');
+		echo 'my-component -> task<br>';
+		$this->em->fire('my-component:afterTask',$this);
+		var_dump($this->em->getResponses());
+	}
+}
 
-//$dispatcher = new Dispatcher($di);
-//$dispatcher->setControllerName('test');
-$dispatcher = new Phalcon\Mvc\Dispatcher();
-$dispatcher->setControllerName('test');
-$dispatcher->forward(array());
-var_dump($dispatcher);
+$m = new MyComponent();
+$m->task();

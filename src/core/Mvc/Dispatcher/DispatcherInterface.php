@@ -16,12 +16,12 @@ interface DispatcherInterface {
 	public function setModuleName($moduleName); 
 	public function setActionName($actionName); 
 	public function getActionName(); 
-	public function setParams($params); 
+	public function setParams(array $params); 
 	public function getParams(); 
 	public function setParam($param, $value); 
 	public function getParam($param, $filters); 
 	public function isFinished(); 
 	public function getReturnedValue(); 
 	public function dispatch(); 
-	public function forward($forward); 
+	public function forward(array $forward); 
 }
