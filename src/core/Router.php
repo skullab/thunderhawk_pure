@@ -34,7 +34,7 @@ class Router implements RouterInterface {
 			$this->setDefaultController ( 'index' );
 			// $this->setDefaultModule('');
 			// $this->setDefaultNamespace('');
-			$this->add ( '' );
+			$this->add ('/');
 			$this->add('/:controller',array('controller'=>1,'action'=>'index'));
 			$this->add('/:controller/:action',array('controller'=>1,'action'=>2));
 		}

@@ -20,8 +20,10 @@ use Thunderhawk\Filter\StripLower;
 use Thunderhawk\Filter\StripUpper;
 use Thunderhawk\Filter\Camelize;
 use Thunderhawk\Filter\Underscore;
+use Thunderhawk\Filter\FilterException;
 
 class Filter implements FilterInterface {
+	
 	const FILTER_EMAIL = "email";
 	const FILTER_URL = "url";
 	const FILTER_ABS = "abs";
@@ -41,7 +43,11 @@ class Filter implements FilterInterface {
 	const FILTER_CAMELIZE = "camelize";
 	const FILTER_UNDERSCORE = "underscore";
 	protected $_handlers = array ();
-	public function __construct() {
+	protected $_throwException = false ;
+	
+	public function __construct($empty = false, $throwException = false) {
+		$this->throwException($throwException);
+		if($empty)return;
 		$this->add ( self::FILTER_ABS, new ABS () );
 		$this->add ( self::FILTER_ALPHANUM, new Alphanum () );
 		$this->add(self::FILTER_CAMELIZE, new Camelize());
@@ -61,20 +67,27 @@ class Filter implements FilterInterface {
 		$this->add ( self::FILTER_UPPER, new Upper () );
 		$this->add ( self::FILTER_URL, new URL () );
 	}
+	public function throwException($enable){
+		$this->_throwException = (bool)$enable ;
+	}
 	public function add($name, $handler) {
 		if (is_object ( $handler )) {
 			$this->_handlers [( string ) $name] = $handler;
 		}
 	}
 	protected function _sanitize($value, $filter) {
-		if (isset ( $this->_handlers [$filter] )) {
+		if ($this->exists($filter)) {
 			if (is_callable ( $this->_handlers [$filter] )) {
 				return $this->_handlers [$filter] ( $value );
 			} else if ($this->_handlers [$filter] instanceof FilterHandlerInterface) {
 				return $this->_handlers [$filter]->filter ( $value );
 			}
 		}
-		return false;
+		if($this->_throwException){
+			$message = sprintf("The filter '%s' doesn't exists",$filter);
+			throw new FilterException($message,100);
+		}
+		return $value ;
 	}
 	public function sanitize($value, $filters) {
 		$filters = is_array($filters)? $filters : array((string)$filters);
@@ -91,5 +104,10 @@ class Filter implements FilterInterface {
 			return $this->_handlers [$name];
 		}
 		return null;
+	}
+	
+	public function exists($filter) {
+		return isset($this->_handlers[$filter]);
 	}
+
 }

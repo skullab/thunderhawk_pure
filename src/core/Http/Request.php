@@ -393,15 +393,18 @@ class Request implements InjectionInterface, RequestInterface {
 		return $this->getContent($_SERVER['HTTP_ACCEPT']);
 	}
 	
+	protected function getBestContent(array $content){
+		arsort($content,SORT_NUMERIC);
+		reset($content);
+		return key($content);
+	}
 	/*
 	 * (non-PHPdoc)
 	 * @see \Thunderhawk\Http\Request\RequestInterface::getBestAccept()
 	 */
 	public function getBestAccept() {
-		$result = $this->getAcceptableContent();
-		arsort($result,SORT_NUMERIC);
-		reset($result);
-		return key($result);
+		return $this->getBestContent($this->getAcceptableContent());
+		
 	}
 	
 	/*
@@ -409,7 +412,7 @@ class Request implements InjectionInterface, RequestInterface {
 	 * @see \Thunderhawk\Http\Request\RequestInterface::getClientCharsets()
 	 */
 	public function getClientCharsets() {
-		// TODO: Auto-generated method stub
+		return isset($_SERVER['HTTP_ACCEPT_CHARSET']) ? $this->getContent($_SERVER['HTTP_ACCEPT_CHARSET']) : array() ;
 	}
 	
 	/*
@@ -417,7 +420,7 @@ class Request implements InjectionInterface, RequestInterface {
 	 * @see \Thunderhawk\Http\Request\RequestInterface::getBestCharset()
 	 */
 	public function getBestCharset() {
-		// TODO: Auto-generated method stub
+		return $this->getBestContent($this->getClientCharsets());
 	}
 	
 	/*
@@ -425,7 +428,7 @@ class Request implements InjectionInterface, RequestInterface {
 	 * @see \Thunderhawk\Http\Request\RequestInterface::getLanguages()
 	 */
 	public function getLanguages() {
-		// TODO: Auto-generated method stub
+		return $this->getContent($_SERVER['HTTP_ACCEPT_LANGUAGE']);
 	}
 	
 	/*
@@ -433,7 +436,7 @@ class Request implements InjectionInterface, RequestInterface {
 	 * @see \Thunderhawk\Http\Request\RequestInterface::getBestLanguage()
 	 */
 	public function getBestLanguage() {
-		// TODO: Auto-generated method stub
+		return $this->getBestContent($this->getLanguages());
 	}
 	
 	/*
@@ -441,7 +444,10 @@ class Request implements InjectionInterface, RequestInterface {
 	 * @see \Thunderhawk\Http\Request\RequestInterface::getBasicAuth()
 	 */
 	public function getBasicAuth() {
-		// TODO: Auto-generated method stub
+		if (!isset($_SERVER['PHP_AUTH_USER'])) return null ;
+		return array(
+				'PHP_AUTH_USER' => $_SERVER['PHP_AUTH_USER'],
+				'PHP_AUTH_PW' => $_SERVER['PHP_AUTH_PW'] ) ;
 	}
 	
 	/*
@@ -449,6 +455,19 @@ class Request implements InjectionInterface, RequestInterface {
 	 * @see \Thunderhawk\Http\Request\RequestInterface::getDigestAuth()
 	 */
 	public function getDigestAuth() {
-		// TODO: Auto-generated method stub
+		if(!isset($_SERVER['PHP_AUTH_DIGEST']))return null ;
+		// protect against missing data
+		$needed_parts = array('nonce'=>1, 'nc'=>1, 'cnonce'=>1, 'qop'=>1, 'username'=>1, 'uri'=>1, 'response'=>1);
+		$data = array();
+		$keys = implode('|', array_keys($needed_parts));
+		
+		preg_match_all('@(' . $keys . ')=(?:([\'"])([^\2]+?)\2|([^\s,]+))@', $_SERVER['PHP_AUTH_DIGEST'], $matches, PREG_SET_ORDER);
+		
+		foreach ($matches as $m) {
+			$data[$m[1]] = $m[3] ? $m[3] : $m[4];
+			unset($needed_parts[$m[1]]);
+		}
+		
+		return $needed_parts ? null : $data;
 	}
 }

@@ -15,7 +15,7 @@ use Thunderhawk\Mvc\Model\Message\MessageInterface;
 use Thunderhawk\Mvc\Model\Message;
 
 
-class Model implements InjectionInterface, ModelInterface, \Serializable {
+abstract class Model implements InjectionInterface, ModelInterface, \Serializable {
 	//
 	const CON_GLOBAL = 'global';
 	const CON_READ = 'read';
@@ -46,6 +46,7 @@ class Model implements InjectionInterface, ModelInterface, \Serializable {
 	protected $_messages = array();
 	//
 	final public function __construct(ContainerInterface $di = null) {
+		//TODO get Filter and replace Utils
 		$this->setTableName ( Utils::underscore ( basename ( get_class ( $this ) ) ) );
 		if($di){
 			$this->setDi($di);
