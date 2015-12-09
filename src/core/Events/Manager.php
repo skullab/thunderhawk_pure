@@ -60,8 +60,14 @@ class Manager implements ManagerInterface {
 	 * @see \Thunderhawk\Events\Manager\ManagerInterface::detach()
 	 */
 	public function detach($eventType, $handler) {
-		if (false !== $key = array_search ( $handler, $this->getEvents ( $eventType ) )) {
-			unset($this->_events[$key]);
+		
+		/*$keys = array_keys($this->getEvents($eventType),$handler,true);
+		var_dump($keys,$this->_events) ;
+		return ;*/
+		
+		if (false !== $key = array_search ( $handler, $this->getEvents ( $eventType ),true )) {
+			//var_dump($key);
+			unset($this->_events[$eventType][$key]);
 			$this->detach ( $eventType, $handler );
 		}
 	}
@@ -81,24 +87,26 @@ class Manager implements ManagerInterface {
 		if(is_callable($handler)){
 			$response = $handler($event,$event->getSource(),$event->getData());
 		}else{
-			if(is_object($handler) && !is_null($event->getSource())){
+			if(is_object($handler) && method_exists($handler,$event->getType())){
 				$args = array($event,$event->getSource(),$event->getData());
 				$response = call_user_func_array(
 						array($handler,$event->getType()), $args);
 			}
 		}
 		if($this->collectResponses()){
-			var_dump($response);
+			//var_dump($response);
 			$this->_responses[] = $response ;
 		}
 		return $event ;
 	}
 	public function fireQueue(array $queue,Event $event){
+		//var_dump($queue,$event);
 		foreach ($queue as $handler){
 			$this->fireEvent($handler, $event);
 			//var_dump($event);
 			if($event->isStopped())break;
 		}
+		return $event ;
 	}
 	public function fire($eventType, $source, $data = null, $cancelable = true) {
 		$prefix = $this->hasPrefix ( $eventType );
@@ -112,10 +120,13 @@ class Manager implements ManagerInterface {
 			return ;
 		}
 		$event = new Event($type, $source,$data,$cancelable);
-		$this->fireQueue($this->getEvents($_eventType), $event);
+		//var_dump($type);
+		
 		
 		if ($_eventType != $eventType && $this->hasEvents($eventType)) {
-			$this->fireQueue($this->getEvents($eventType), $event);
+			return $this->fireQueue($this->getEvents($eventType), $event);
+		}else{
+			return $this->fireQueue($this->getEvents($_eventType), $event);
 		}
 	}
 	protected function hasPrefix($eventType) {
