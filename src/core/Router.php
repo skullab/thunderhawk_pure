@@ -5,8 +5,12 @@ namespace Thunderhawk;
 use Thunderhawk\Router\RouterInterface;
 use Thunderhawk\Router\Route\RouteInterface;
 use Thunderhawk\Router\Route;
+use Thunderhawk\Di\InjectionInterface;
+use Thunderhawk\Di\ContainerInterface;
+use Thunderhawk\Events\EventsAwareInterface;
+use Thunderhawk\Events\Manager\ManagerInterface;
 
-class Router implements RouterInterface {
+class Router implements RouterInterface,InjectionInterface,EventsAwareInterface {
 	const SOURCE_MODE_GET_URL = 100;
 	const SOURCE_MODE_SERVER_REQUEST_URI = 200;
 	const HTTP_METHOD_GET = 'GET';
@@ -27,6 +31,8 @@ class Router implements RouterInterface {
 	private $macthed_route = null;
 	private $requested_uri;
 	private $source_mode = self::SOURCE_MODE_GET_URL;
+	protected $_di ;
+	protected $_eventsManager ;
 	
 	public function __construct($setDefault = true) {
 		if ($setDefault) {
@@ -60,6 +66,7 @@ class Router implements RouterInterface {
 		}
 	}
 	public function handle($uri = null) {
+		if($this->fireEvent('router:beforeHandleRoute'))return;
 		switch ($this->source_mode) {
 			case self::SOURCE_MODE_SERVER_REQUEST_URI :
 				$url = $_SERVER ['REQUEST_URI'];
@@ -69,9 +76,12 @@ class Router implements RouterInterface {
 		}
 		
 		$this->requested_uri = $uri ? $uri : $url;
+		
 		if ($this->wasMatched ()) {
 			
 			if (! in_array ( $_SERVER ['REQUEST_METHOD'], $this->getMatchedRoute ()->getHttpMethods () )) {
+				if($this->fireEvent('router:beforeWrongMethod'))return;
+				//throw exception
 				var_dump ( 'route matched but wrong http method' );
 			}
 			
@@ -83,8 +93,11 @@ class Router implements RouterInterface {
 			var_dump($this->getMatches());
 			var_dump ( $module, $namespace,$controller, $action, $params );
 		} else {
+			if($this->fireEvent('router:beforeNotFound',$this->requested_uri))return;
+			//throw exception
 			var_dump ( 'no matched route' );
 		}
+		if($this->fireEvent('router:afterHandleRoute'))return;
 	}
 	public function add($pattern, $handler = array(), $httpMethods = array()) {
 		$route = new Route ( $pattern, $handler, $httpMethods );
@@ -133,17 +146,16 @@ class Router implements RouterInterface {
 		// TODO: Auto-generated method stub
 	}
 	public function clear() {
-		// TODO: Auto-generated method stub
+		$this->routes = array();
 	}
 	public function getModuleName() {
-		if (! $this->macthed_route)
-			return null;
+		if (! $this->macthed_route)return null;
 		$handler = $this->macthed_route->getHandler ();
 		if (array_key_exists ( 'module', $handler )) {
 			$name = is_int($handler['module']) ? $this->getMatches()[$handler['module']] : $handler ['module'];
 			return $name;
 		}
-		return null;
+		return $this->defaults['module'];
 	}
 	public function getNamespaceName() {
 		if(! $this->macthed_route) return null ;
@@ -152,29 +164,27 @@ class Router implements RouterInterface {
 			$name = is_int($handler['namespace']) ? $this->getMatches()[$handler['namespace']] : $handler['namespace'] ;
 			return $name ;
 		}
-		return null ;
+		return $this->defaults['namespace'] ;
 	}
 	public function getControllerName() {
-		if (! $this->macthed_route)
-			return null;
+		if (! $this->macthed_route) return null ;
 		$handler = $this->macthed_route->getHandler ();
 		if (array_key_exists ( 'controller', $handler )) {
 			$name = is_int($handler['controller']) ? $this->getMatches()[$handler['controller']] : $handler ['controller'];
 			// $name = ucfirst($name).'Controller';
 			return $name;
 		}
-		return null;
+		return $this->defaults['controller'];
 	}
 	public function getActionName() {
-		if (! $this->macthed_route)
-			return null;
+		if (! $this->macthed_route) return null ;
 		$handler = $this->macthed_route->getHandler ();
 		if (array_key_exists ( 'action', $handler )) {
 			$name = is_int($handler['action']) ? $this->getMatches()[$handler['action']] : $handler ['action'];
 			// $name .= 'Action' ;
 			return $name;
 		}
-		return null;
+		return $this->defaults['action'];
 	}
 	public function getParams() {
 		if (! $this->macthed_route)
@@ -200,6 +210,16 @@ class Router implements RouterInterface {
 				return $params ;
 			}else return array();
 		}
+	}
+	public function getAttribute($attribute){
+		if (! $this->macthed_route)
+			return null;
+		$handler = $this->macthed_route->getHandler ();
+		if(array_key_exists($attribute, $handler)){
+			return (is_int($handler[$attribute]) ? $this->getMatches()[$handler[$attribute]] : $handler[$attribute]) ;
+		}
+		return null ;
+		
 	}
 	public function getMatchedRoute() {
 		return $this->macthed_route;
@@ -240,5 +260,43 @@ class Router implements RouterInterface {
 			}
 		}
 		return null;
+	}
+	/* (non-PHPdoc)
+	 * @see \Thunderhawk\Di\InjectionInterface::setDi()
+	 */
+	public function setDi(ContainerInterface $di) {
+		$this->_di = $di ;
 	}
+
+	/* (non-PHPdoc)
+	 * @see \Thunderhawk\Di\InjectionInterface::getDi()
+	 */
+	public function getDi() {
+		return $this->_di ;
+	}
+	
+	protected function fireEvent($eventType, $data = null, $cancelable = true) {
+		if ($this->getEventsManager () != null) {
+			$event = $this->_eventsManager->fire ( $eventType, $this, $data, $cancelable );
+			return $event->isStopped ();
+		}
+		return false;
+	}
+	
+	/* (non-PHPdoc)
+	 * @see \Thunderhawk\Events\EventsAwareInterface::setEventsManager()
+	 */
+	public function setEventsManager(ManagerInterface $eventsManager) {
+		$this->_eventsManager = $eventsManager ;
+
+	}
+
+	/* (non-PHPdoc)
+	 * @see \Thunderhawk\Events\EventsAwareInterface::getEventsManager()
+	 */
+	public function getEventsManager() {
+		return $this->_eventsManager ;
+
+	}
+
 }

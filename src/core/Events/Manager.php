@@ -88,7 +88,7 @@ class Manager implements ManagerInterface {
 			$response = $handler($event,$event->getSource(),$event->getData());
 		}else{
 			if(is_object($handler) && method_exists($handler,$event->getType())){
-				$args = array($event,$event->getSource(),$event->getData());
+				$args = array($event->getSource(),$event,$event->getData());
 				$response = call_user_func_array(
 						array($handler,$event->getType()), $args);
 			}

@@ -1,5 +1,5 @@
 <?php
-//echo 'start<br>';
+// echo 'start<br>';
 use Thunderhawk\Autoloader;
 use Thunderhawk\Db\PDO\Dsn;
 use Thunderhawk\Db\PDO\Connection\Connector;
@@ -24,12 +24,14 @@ use Thunderhawk\Http\Response;
 use Thunderhawk\Http\Response\Cookies;
 use Thunderhawk\Filter\String;
 use Thunderhawk\Mvc\Dispatcher;
-use Thunderhawk\Events\Manager as EventsManager ;
-
+use Thunderhawk\Events\Manager as EventsManager;
+use Thunderhawk\Events\Thunderhawk\Events;
+use Thunderhawk\Thunderhawk;
 
 require '../src/core/Autoloader.php';
 $loader = new Autoloader ( '../src/' );
 $loader->registerNamespaces ( array (
+		'MyApp\Controllers' => 'app/',
 		'Thunderhawk' => 'core/',
 		'Thunderhawk\Plugin' => 'plugins/',
 		'Thunderhawk\Module' => 'modules/' 
@@ -59,44 +61,58 @@ $di->set ( 'db', function ($di) use($info) {
 	return new Database ( $info );
 } );
 
-class MyComponentListener {
-	public function beforeTask($event,$component,$data){
-		echo 'my-component-listener -> '.$event->getType().'<br>' ;
-		echo 'and say : '.$data.'<br>' ;
-		//$event->stop();
-		return 'after task response';
-	}
-	public function afterTask($event,$component){
-		echo 'my-component-listener -> '.$event->getType().'<br>' ;
-	}
-	public function finishTask($event,$component){
-		echo 'my-component-listener -> '.$event->getType().'<br>' ;
-	}
-}
-class MyComponent {
-	protected $em ;
-	protected $listener ;
-	protected $func01,$func02 ;
-	public function __construct(){
-		$this->em = new EventsManager();
-		$this->em->collectResponses(true);
-		$this->listener = new MyComponentListener();
-		$this->em->attach('my-component',$this->listener);
-	}
-	public function _internalListener($event){
-		var_dump('internal listener '.$event->getType() );
-	}
-	public function task(){
-		$event = $this->em->fire('my-component:beforeTask', $this,'hello world');
-		if($event->isStopped())return;
-		echo 'my-component -> task<br>';
-		$event = $this->em->fire('my-component:afterTask',$this);
-		if($event->isStopped())return;
-		$event = $this->em->fire('my-component:finishTask',$this);
-		if($event->isStopped())return;
-		var_dump($this->em->getResponses());
-	}
-}
+$dispatcher = new Dispatcher ( $di );
+$di->set ( 'dispatcher', function ($di) use($dispatcher) {
+	return $dispatcher;
+} );
+$em = new EventsManager ();
+$em->attach ( 'dispatch', function ($event, $component) {
+	var_dump($event->getType());
+} );
+$em->attach('router', function($event,$component){
+	var_dump($event->getType());
+});
+$dispatcher->setEventsManager ( $em );
+//$dispatcher->setDefaultNamespace ( 'MyApp\Controllers' );
 
-$m = new MyComponent();
-$m->task();
+$router = new Router(false);
+$di->set('router',function($di)use($router){
+	return $router ;
+});
+$router->setEventsManager($em);
+
+$router->setDefaultNamespace('MyApp\Controllers');
+$router->setDefaultController('index');
+$router->setDefaultAction('index');
+$router->add('/',array(
+		'params' => array(
+				'language' => 'en'
+		)
+));
+$router->add('/([a-z]{2})/:action',array(
+		'controller' =>'index',
+		'action' => 2,
+		'language' => 1,
+		/*'params' => array(
+				'language' => 1
+		)*/
+),array('POST','GET'));
+
+$router->add('/:action',array(
+		'controller' =>'index',
+		'action' => 1,
+		'language' => 'en'
+		/*'params' => array(
+				'language' => 'en'
+		)*/
+));
+
+$router->handle();
+$dispatcher->setNamespaceName($router->getNamespaceName());
+$dispatcher->setControllerName($router->getControllerName());
+$dispatcher->setActionName($router->getActionName());
+$dispatcher->setParams($router->getParams() ? $router->getParams() : array());
+
+echo $router->getAttribute('language');
+
+$dispatcher->dispatch();
