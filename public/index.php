@@ -27,6 +27,9 @@ use Thunderhawk\Mvc\Dispatcher;
 use Thunderhawk\Events\Manager as EventsManager;
 use Thunderhawk\Events\Thunderhawk\Events;
 use Thunderhawk\Thunderhawk;
+use Thunderhawk\Mvc\View;
+use Thunderhawk\Mvc\View\Engine;
+use Thunderhawk\Mvc\Thunderhawk\Mvc;
 
 require '../src/core/Autoloader.php';
 $loader = new Autoloader ( '../src/' );
@@ -57,62 +60,51 @@ $info = array (
 );
 
 $di = new Container ();
+
 $di->set ( 'db', function ($di) use($info) {
 	return new Database ( $info );
 } );
 
-$dispatcher = new Dispatcher ( $di );
-$di->set ( 'dispatcher', function ($di) use($dispatcher) {
-	return $dispatcher;
-} );
-$em = new EventsManager ();
-$em->attach ( 'dispatch', function ($event, $component) {
-	var_dump($event->getType());
-} );
-$em->attach('router', function($event,$component){
-	var_dump($event->getType());
+$di->set('dispatcher',function($di){
+	$dispatcher = new Dispatcher($di);
+	return $dispatcher ;
 });
-$dispatcher->setEventsManager ( $em );
-//$dispatcher->setDefaultNamespace ( 'MyApp\Controllers' );
 
-$router = new Router(false);
-$di->set('router',function($di)use($router){
-	return $router ;
+class Phtml extends Engine{
+	/* (non-PHPdoc)
+	 * @see \Thunderhawk\Mvc\View\Engine::__construct()
+	 */
+	public function __construct($view, $di = null) {
+		parent::__construct($view,$di);
+
+	}
+	public function render($viewPath, $params){
+		foreach ($params as $key => $value){
+			$this->{$key} = $value ;
+		}
+		require ''.$viewPath ;
+	}
+}
+
+$em = new EventsManager();
+$em->attach('view',function($event,$component){
+	var_dump($event->getType(),$event->getData());
 });
-$router->setEventsManager($em);
-
-$router->setDefaultNamespace('MyApp\Controllers');
-$router->setDefaultController('index');
-$router->setDefaultAction('index');
-$router->add('/',array(
-		'params' => array(
-				'language' => 'en'
-		)
+$view = new View();
+$view->setDi($di);
+$view->setBasePath('../src/');
+$view->setViewsDir('app/views/');
+$view->registerEngines(array(
+			'.phtml' => 'Phtml'
 ));
-$router->add('/([a-z]{2})/:action',array(
-		'controller' =>'index',
-		'action' => 2,
-		'language' => 1,
-		/*'params' => array(
-				'language' => 1
-		)*/
-),array('POST','GET'));
+$view->setEventsManager($em);
+$view->start()->render('blog', 'index',array('title' => 'My Blog Title'))->finish() ;
+echo $view->getContent();
 
-$router->add('/:action',array(
-		'controller' =>'index',
-		'action' => 1,
-		'language' => 'en'
-		/*'params' => array(
-				'language' => 'en'
-		)*/
-));
 
-$router->handle();
-$dispatcher->setNamespaceName($router->getNamespaceName());
-$dispatcher->setControllerName($router->getControllerName());
-$dispatcher->setActionName($router->getActionName());
-$dispatcher->setParams($router->getParams() ? $router->getParams() : array());
 
-echo $router->getAttribute('language');
 
-$dispatcher->dispatch();
+
+
+
+

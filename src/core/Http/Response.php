@@ -79,6 +79,8 @@ class Response implements InjectionInterface, ResponseInterface {
 			}
 			$this->setHeader('Location',$location,true,$statusCode);
 			$this->send();
+		}else{
+			//internal redirect
 		}
 	}
 	
