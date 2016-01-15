@@ -44,7 +44,7 @@ class View implements InjectionInterface, ViewInterface, EventsAwareInterface {
 	protected $_actionName = null ;
 	protected $_params = array ();
 	protected $_activeRenderLevel = 1 ;
-
+	protected $_isRendered = false ;
 	public function __construct() {
 		
 	}
@@ -284,6 +284,7 @@ class View implements InjectionInterface, ViewInterface, EventsAwareInterface {
 	 * @see \Thunderhawk\Mvc\View\ViewInterface::render()
 	 */
 	public function render($controllerName, $actionName, $params = null) {
+		if($this->_isRendered)return $this ;
 		$this->_controllerName = $this->getLayout() ? $this->getLayout() : $controllerName;
 		$this->_actionName = $actionName;
 		$this->_params = $params != null ? array_merge ( $this->_params, $params ) : $this->_params;
@@ -319,6 +320,7 @@ class View implements InjectionInterface, ViewInterface, EventsAwareInterface {
 			}
 		}
 		$this->fireEvent ( 'view:afterRender', null, false );
+		$this->_isRendered = true ;
 		return $this;
 	}
 	
@@ -327,7 +329,18 @@ class View implements InjectionInterface, ViewInterface, EventsAwareInterface {
 	 * @see \Thunderhawk\Mvc\View\ViewInterface::pick()
 	 */
 	public function pick($renderView) {
+		if(is_array($renderView)){
+			$this->_controllerName = isset($renderView[0]) ? $renderView[0] : $this->getDi()->router->getControllerName() ;
+			$this->_actionName = isset($renderView[1]) ? $renderView[1] : $this->getDi()->router->getActionName() ;
+			$this->_params = isset($renderView[2]) ? $renderView[2] : $this->getDi()->router->getParams();
+			
+		}else if(is_string($renderView)){
+			$path = explode('/', $renderView) ;
+			$this->_controllerName = $path[0];
+			$this->_actionName = isset($path[1]) ? $path[1] : 'index' ;
+		}
 		
+		return $this->render($this->_controllerName, $this->_actionName,$this->_params);
 	}
 	
 	/*
@@ -416,6 +429,7 @@ class View implements InjectionInterface, ViewInterface, EventsAwareInterface {
 		$this->_actionName = null ;
 		$this->_params = array ();
 		$this->_activeRenderLevel = 1 ;
+		$this->_isRendered = false ;
 	}
 	
 	/*

@@ -72,6 +72,7 @@ $di->set('dispatcher',function($di){
 
 $di->set('router',function($di){
 	$router = new Router();
+	$router->setDi($di);
 	$router->setDefaultNamespace('MyApp\Controllers');
 	return $router ;
 },true);
@@ -95,12 +96,11 @@ $di->view->start();
 try {
 $di->dispatcher->dispatch();
 }catch (\Exception $e){
-	
+	//throw $e ;
 }
 $di->view->render($di->router->getControllerName(),$di->router->getActionName(),$di->router->getParams());
 $di->view->finish();
 
 echo $di->view->getContent() ;
-
 
 

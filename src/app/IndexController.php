@@ -5,8 +5,7 @@ use Thunderhawk\Mvc\Controller;
 class IndexController extends Controller{
 	
 	public function indexAction(){
-		$this->view->myValue = 'ciao' ;
-		echo 'from controller' ;
+		$this->view->pick('blog/index');
 	}
 	
 	public function testAction(){
