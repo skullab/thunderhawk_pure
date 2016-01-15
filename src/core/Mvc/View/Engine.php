@@ -17,7 +17,7 @@ abstract class Engine extends ContainerInjection implements EventsAwareInterface
 	}
 	
 	public function getContent(){
-		return ob_get_contents() ;
+		return $this->_view->getContent();
 	}
 	
 	public function setEventsManager(ManagerInterface $eventsManager){
@@ -28,8 +28,8 @@ abstract class Engine extends ContainerInjection implements EventsAwareInterface
 		return $this->_eventsManager ;
 	}
 	
-	public function partial($partialPath, $params) {
-		
+	public function partial($partialPath, $params = null) {
+		return $this->_view->partial($partialPath,$params);
 	}
 
 

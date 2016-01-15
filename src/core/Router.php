@@ -149,7 +149,7 @@ class Router implements RouterInterface,InjectionInterface,EventsAwareInterface 
 		$this->routes = array();
 	}
 	public function getModuleName() {
-		if (! $this->macthed_route)return null;
+		if (! $this->macthed_route)return $this->defaults['module'] ;
 		$handler = $this->macthed_route->getHandler ();
 		if (array_key_exists ( 'module', $handler )) {
 			$name = is_int($handler['module']) ? $this->getMatches()[$handler['module']] : $handler ['module'];
@@ -158,7 +158,7 @@ class Router implements RouterInterface,InjectionInterface,EventsAwareInterface 
 		return $this->defaults['module'];
 	}
 	public function getNamespaceName() {
-		if(! $this->macthed_route) return null ;
+		if(! $this->macthed_route) return $this->defaults['namespace'] ;
 		$handler = $this->macthed_route->getHandler();
 		if(array_key_exists('namespace', $handler)){
 			$name = is_int($handler['namespace']) ? $this->getMatches()[$handler['namespace']] : $handler['namespace'] ;
@@ -167,7 +167,7 @@ class Router implements RouterInterface,InjectionInterface,EventsAwareInterface 
 		return $this->defaults['namespace'] ;
 	}
 	public function getControllerName() {
-		if (! $this->macthed_route) return null ;
+		if (! $this->macthed_route) return $this->defaults['controller'] ;
 		$handler = $this->macthed_route->getHandler ();
 		if (array_key_exists ( 'controller', $handler )) {
 			$name = is_int($handler['controller']) ? $this->getMatches()[$handler['controller']] : $handler ['controller'];
@@ -177,7 +177,7 @@ class Router implements RouterInterface,InjectionInterface,EventsAwareInterface 
 		return $this->defaults['controller'];
 	}
 	public function getActionName() {
-		if (! $this->macthed_route) return null ;
+		if (! $this->macthed_route) return $this->defaults['action'] ;
 		$handler = $this->macthed_route->getHandler ();
 		if (array_key_exists ( 'action', $handler )) {
 			$name = is_int($handler['action']) ? $this->getMatches()[$handler['action']] : $handler ['action'];
@@ -188,7 +188,7 @@ class Router implements RouterInterface,InjectionInterface,EventsAwareInterface 
 	}
 	public function getParams() {
 		if (! $this->macthed_route)
-			return null;
+			return array();
 		$handler = $this->macthed_route->getHandler ();
 		if (array_key_exists ( 'params', $handler )) {
 			$params = is_int($handler['params']) ? $this->getMatches()[$handler['params']] : $handler ['params'];

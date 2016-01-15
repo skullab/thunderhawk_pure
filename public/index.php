@@ -25,11 +25,11 @@ use Thunderhawk\Http\Response\Cookies;
 use Thunderhawk\Filter\String;
 use Thunderhawk\Mvc\Dispatcher;
 use Thunderhawk\Events\Manager as EventsManager;
-use Thunderhawk\Events\Thunderhawk\Events;
-use Thunderhawk\Thunderhawk;
 use Thunderhawk\Mvc\View;
 use Thunderhawk\Mvc\View\Engine;
 use Thunderhawk\Mvc\Thunderhawk\Mvc;
+
+
 
 require '../src/core/Autoloader.php';
 $loader = new Autoloader ( '../src/' );
@@ -68,43 +68,39 @@ $di->set ( 'db', function ($di) use($info) {
 $di->set('dispatcher',function($di){
 	$dispatcher = new Dispatcher($di);
 	return $dispatcher ;
-});
+},true);
 
-class Phtml extends Engine{
-	/* (non-PHPdoc)
-	 * @see \Thunderhawk\Mvc\View\Engine::__construct()
-	 */
-	public function __construct($view, $di = null) {
-		parent::__construct($view,$di);
+$di->set('router',function($di){
+	$router = new Router();
+	$router->setDefaultNamespace('MyApp\Controllers');
+	return $router ;
+},true);
 
-	}
-	public function render($viewPath, $params){
-		foreach ($params as $key => $value){
-			$this->{$key} = $value ;
-		}
-		require ''.$viewPath ;
-	}
+$di->set('view',function($di){
+	$view = new View();
+	$view->setDi($di);
+	$view->setBasePath('../src/');
+	$view->setViewsDir('app/views/');
+	return $view ;
+},true);
+
+
+$di->router->handle();
+$di->dispatcher->setNamespaceName($di->router->getNamespaceName());
+$di->dispatcher->setControllerName($di->router->getControllerName());
+$di->dispatcher->setActionName($di->router->getActionName());
+$di->dispatcher->setParams($di->router->getParams());
+
+$di->view->start();
+try {
+$di->dispatcher->dispatch();
+}catch (\Exception $e){
+	
 }
+$di->view->render($di->router->getControllerName(),$di->router->getActionName(),$di->router->getParams());
+$di->view->finish();
 
-$em = new EventsManager();
-$em->attach('view',function($event,$component){
-	var_dump($event->getType(),$event->getData());
-});
-$view = new View();
-$view->setDi($di);
-$view->setBasePath('../src/');
-$view->setViewsDir('app/views/');
-$view->registerEngines(array(
-			'.phtml' => 'Phtml'
-));
-$view->setEventsManager($em);
-$view->start()->render('blog', 'index',array('title' => 'My Blog Title'))->finish() ;
-echo $view->getContent();
-
-
-
-
-
+echo $di->view->getContent() ;
 
 
 

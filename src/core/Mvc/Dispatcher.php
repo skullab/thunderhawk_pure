@@ -265,6 +265,7 @@ class Dispatcher implements InjectionInterface, DispatcherInterface, EventsAware
 					if ($this->fireEvent ( 'dispatch:beforeNotFoundAction' ))
 						break;
 					$action = $this->getActiveMethod ();
+					var_dump("action $action doesn't exists");
 					throw new \Exception ( "action $action doesn't exists" );
 				}
 				
