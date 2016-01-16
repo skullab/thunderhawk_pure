@@ -2,7 +2,10 @@
 
 namespace Thunderhawk\Mvc\Model\Criteria;
 
+use Thunderhawk\Mvc\Model\ModelInterface;
 interface CriteriaInterface {
+	public function setModel(ModelInterface $model);
+	public function getModel();
 	public function setModelName($modelName);
 	public function getModelName();
 	public function bind(array $bindParams);

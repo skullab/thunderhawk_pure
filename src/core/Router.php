@@ -65,6 +65,9 @@ class Router implements RouterInterface,InjectionInterface,EventsAwareInterface 
 			$this->source_mode = $mode;
 		}
 	}
+	public function getSourceMode(){
+		return $this->source_mode ;
+	}
 	public function handle($uri = null) {
 		if($this->fireEvent('router:beforeHandleRoute'))return;
 		switch ($this->source_mode) {
@@ -90,8 +93,11 @@ class Router implements RouterInterface,InjectionInterface,EventsAwareInterface 
 			$controller = $this->getControllerName () ? $this->getControllerName () : $this->defaults ['controller'];
 			$action = $this->getActionName () ? $this->getActionName () : $this->defaults ['action'];
 			$params = $this->getParams ();
-			var_dump($this->getMatches());
-			var_dump ( $module, $namespace,$controller, $action, $params );
+			
+			var_dump($this->getMatchedRoute(),$params);
+			
+			//var_dump($this->getMatches());
+			//var_dump ( $module, $namespace,$controller, $action, $params );
 		} else {
 			if($this->fireEvent('router:beforeNotFound',$this->requested_uri))return;
 			//throw exception
@@ -255,7 +261,7 @@ class Router implements RouterInterface,InjectionInterface,EventsAwareInterface 
 	}
 	public function getRouteByName($name) {
 		foreach ( $this->routes as $route ) {
-			if ($name == $route->getName) {
+			if ($name == $route->getName()) {
 				return $route;
 			}
 		}

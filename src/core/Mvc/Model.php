@@ -45,24 +45,43 @@ abstract class Model implements InjectionInterface, ModelInterface, \Serializabl
 	//
 	protected $_messages = array();
 	//
+	//Default options
+	protected static $_options = array(
+			'di' => null,
+			'db' => null,
+			'modelsManager' => null,
+	);
+	//
 	final public function __construct(ContainerInterface $di = null) {
 		//TODO get Filter and replace Utils
 		$this->setTableName ( Utils::underscore ( basename ( get_class ( $this ) ) ) );
-		if($di){
-			$this->setDi($di);
+		//$di = !is_null($di) ? $di : self::$_options['di'] ; 
+		if(!is_null($di))$this->setDi($di);
+		$this->performSetup();
+		$this->onConstruct();
+	}
+	
+	private function performSetup(){
+		if(is_null($this->getDi())){
+			if(!is_null(self::$_options['di'])){
+				$this->setDi(self::$_options['di']);
+				$this->setConnectionService(self::$_options['di']->db);
+			}
 		}else{
-			//get from GLOBAL APP
+			self::$_options['di'] = $this->getDi();
+			$this->setConnectionService($this->getDi()->db);
 		}
-		$this->setConnectionService($this->getDi()->db);
-		
 		$this->_metadata = new MetaData($this);
-		
 		foreach ($this->_metadata->getNames() as $name){
 			$this->_record[$name] = null ;
 		}
-		
 		$this->setPrimaryKeyName();
-		$this->initialize();
+		$manager = self::getModelsManager() ; 
+		if($manager){
+			var_dump(get_class($this));
+			$manager->load(get_class($this),$this);
+			$manager->initialize(get_class($this));
+		}
 	}
 	
 	protected function readAttribute($name){
@@ -195,7 +214,8 @@ abstract class Model implements InjectionInterface, ModelInterface, \Serializabl
 		$record = $data ? $data : $compute ;
 		return array_diff($record, $this->_record);
 	}
-	protected function initialize() {
+	protected function onConstruct(){}
+	public function initialize() {
 	}
 	protected function onCreate($record) {
 	}
@@ -260,6 +280,14 @@ abstract class Model implements InjectionInterface, ModelInterface, \Serializabl
 		return $con ;
 	}
 	
+	private static function getModelsManager(){
+		return is_null(self::$_options['di']) ? self::$_options['modelsManager'] : (self::$_options['di']->serviceExists('modelsManager') ? self::$_options['di']->modelsManager : null);
+	}
+	
+	private static function getCalledModelName(){
+		return get_called_class();
+	}
+	
 	private static function getCalledModel(){
 		$model_name = get_called_class();
 		$model = new $model_name();
@@ -268,7 +296,15 @@ abstract class Model implements InjectionInterface, ModelInterface, \Serializabl
 	
 	private static function _prepareFind($parameters = false,$first = false){
 		$model = self::getCalledModel();
-		$criteria = new Criteria($model);
+		
+		$manager = self::getModelsManager();
+		
+		$criteria = $manager->getModelCriteria(get_called_class());
+		 if(is_null($criteria)){
+			$criteria = new Criteria($model);
+			$manager->saveModelCriteria(get_called_class(),$criteria);
+		 }
+		
 		if($first){
 			$criteria->limit(1);
 		}
@@ -281,6 +317,7 @@ abstract class Model implements InjectionInterface, ModelInterface, \Serializabl
 			$criteria->conditions($parameters);
 		}
 		
+		$manager->saveQuery(get_called_class(),$criteria->resolveQuery());
 		return $criteria->execute();
 	}
 	
@@ -536,6 +573,9 @@ abstract class Model implements InjectionInterface, ModelInterface, \Serializabl
 	}
 	public function getMessages() {
 		return $this->_messages ;
+	}
+	public static function setup(array $options){
+		self::$_options = array_merge(self::$_options,array_intersect_key($options, self::$_options));
 	}
 
 }

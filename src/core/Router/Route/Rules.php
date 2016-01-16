@@ -15,7 +15,8 @@ abstract class Rules {
 			'/:int/'			=> '([0-9]+)',
 			'/:string/'			=> '([a-zA-Z\-\-]+)' ,
 			'/:alphanumeric/'	=> '([a-zA-Z0-9\-\-]+)',
-			'/:mixed/'			=> '([a-zA-Z0-9\-\-]+)'	
+			'/:mixed/'			=> '([a-zA-Z0-9\-\-]+)',
+			'/{([a-zA-Z0-9\-\-]+)}/' => '([a-zA-Z0-9\-\-]+)',
 	);
 	
 	public static function add($placeholder,$replacement){

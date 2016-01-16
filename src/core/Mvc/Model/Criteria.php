@@ -206,10 +206,20 @@ class Criteria implements CriteriaInterface, InjectionInterface {
 	protected $_lastConnection;
 	public function __construct(ModelInterface $model = null) {
 		if (! is_null ( $model )) {
-			$this->_model = $model;
-			$this->setModelName ( $this->_model->getTableName () );
+			$this->setModel($model);
+			$this->setModelName ( $this->getModel()->getTableName () );
 		}
 	}
+	
+	
+	public function setModel(ModelInterface $model) {
+		$this->_model = $model;
+	}
+
+	public function getModel() {
+		return $this->_model ;
+	}
+
 	/**
 	 *
 	 * {@inheritDoc}
