@@ -569,6 +569,23 @@ class Criteria implements CriteriaInterface, InjectionInterface {
 	public function getDi() {
 		return $this->_di;
 	}
+	public function reset(){
+		$this->_query = null ;
+		$this->_distinct = null;
+		$this->_columns = null;
+		$this->_bindParams = array ();
+		$this->_bindTypes = array ();
+		$this->_conditions = null;
+		$this->_groupBy = null;
+		$this->_orderBy = array (
+				'orderColumns' => null,
+				'mode' => null
+		);
+		$this->_limit = array (
+				'limit' => null,
+				'offset' => null
+		);
+	}
 	/**
 	 *
 	 * {@inheritDoc}

@@ -56,7 +56,8 @@ class Manager implements InjectionInterface,EventsAwareInterface{
 	public function getModel($modelName){
 		if($this->isLoaded($modelName)){
 			return $this->_models[$modelName] ;
-		}	
+		}
+		return null ;	
 	}
 	public function saveModelCriteria($modelName,Criteria $criteria){
 		$this->_criterias[$modelName] = $criteria ;

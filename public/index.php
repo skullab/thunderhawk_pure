@@ -64,7 +64,15 @@ $di = new Container ();
 
 $di->set ( 'db', function ($di) use($info) {
 	return new Database ( $info );
-} );
+},true);
+
+$di->set('url',function($di){
+	$url = new Url($di);
+	$url->setBaseUri('/thunderhawk_pure/');
+	$url->setBasePath(__DIR__.'\\');
+	$url->setStaticBaseUri('http://127.0.0.1/thunderhawk_pure/');
+	return $url ;
+},true);
 
 $di->set('dispatcher',function($di){
 	$dispatcher = new Dispatcher($di);
@@ -73,6 +81,7 @@ $di->set('dispatcher',function($di){
 
 $di->set('router',function($di){
 	$router = new Router();
+	//$router->setSourceMode(Router::SOURCE_MODE_SERVER_REQUEST_URI);
 	$router->setDi($di);
 	$router->setDefaultNamespace('MyApp\Controllers');
 	return $router ;
@@ -123,19 +132,3 @@ $di->view->finish();
 
 echo $di->view->getContent() ;
 
-$url = new Url($di);
-$url->setBaseUri('/thunderhawk_pure/');
-$url->setBasePath(__DIR__.'\\');
-$url->setStaticBaseUri('http://127.0.0.1/thunderhawk_pure/');
-
-$uri = $url->get(array(
-		'for' => 'show-posts',
-		'year' => 2016,
-		'month' => 1,
-		'title' => 'my-post-title'
-));
-echo "<a href='$uri'>my link</a><br>";
-$uri = $url->getStatic('test.php');
-echo "<a href='$uri'>my link</a><br>";
-
-echo '<script src="'.$url->getStatic('assets/script.js').'"></script>' ;

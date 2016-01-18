@@ -14,7 +14,6 @@ use Thunderhawk\Mvc\Model\Query;
 use Thunderhawk\Mvc\Model\Message\MessageInterface;
 use Thunderhawk\Mvc\Model\Message;
 
-
 abstract class Model implements InjectionInterface, ModelInterface, \Serializable {
 	//
 	const CON_GLOBAL = 'global';
@@ -78,7 +77,7 @@ abstract class Model implements InjectionInterface, ModelInterface, \Serializabl
 		$this->setPrimaryKeyName();
 		$manager = self::getModelsManager() ; 
 		if($manager){
-			var_dump(get_class($this));
+			//var_dump(get_class($this));
 			$manager->load(get_class($this),$this);
 			$manager->initialize(get_class($this));
 		}
@@ -280,7 +279,7 @@ abstract class Model implements InjectionInterface, ModelInterface, \Serializabl
 		return $con ;
 	}
 	
-	private static function getModelsManager(){
+	public static function getModelsManager(){
 		return is_null(self::$_options['di']) ? self::$_options['modelsManager'] : (self::$_options['di']->serviceExists('modelsManager') ? self::$_options['di']->modelsManager : null);
 	}
 	
@@ -289,21 +288,30 @@ abstract class Model implements InjectionInterface, ModelInterface, \Serializabl
 	}
 	
 	private static function getCalledModel(){
-		$model_name = get_called_class();
-		$model = new $model_name();
-		return $model ;
+		$model_name = self::getCalledModelName();
+		return  new $model_name();
 	}
 	
 	private static function _prepareFind($parameters = false,$first = false){
-		$model = self::getCalledModel();
 		
+		//manager exists ?
 		$manager = self::getModelsManager();
-		
-		$criteria = $manager->getModelCriteria(get_called_class());
-		 if(is_null($criteria)){
+		if(!is_null($manager)){
+			$model = $manager->getModel(self::getCalledModelName());
+			if(is_null($model)){
+				$model = self::getCalledModel();
+			}
+			$criteria = $manager->getModelCriteria(self::getCalledModelName());
+			if(is_null($criteria)){
+				$criteria = new Criteria($model);
+				$manager->saveModelCriteria(self::getCalledModelName(),$criteria);
+			}
+			$criteria->reset();
+			
+		}else{
+			$model = self::getCalledModel();
 			$criteria = new Criteria($model);
-			$manager->saveModelCriteria(get_called_class(),$criteria);
-		 }
+		}
 		
 		if($first){
 			$criteria->limit(1);
@@ -317,7 +325,9 @@ abstract class Model implements InjectionInterface, ModelInterface, \Serializabl
 			$criteria->conditions($parameters);
 		}
 		
-		$manager->saveQuery(get_called_class(),$criteria->resolveQuery());
+		if(!is_null($manager)){
+			$manager->saveQuery(self::getCalledModelName(),$criteria->resolveQuery());
+		}
 		return $criteria->execute();
 	}
 	

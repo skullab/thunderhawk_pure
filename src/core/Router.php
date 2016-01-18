@@ -73,12 +73,17 @@ class Router implements RouterInterface,InjectionInterface,EventsAwareInterface 
 		switch ($this->source_mode) {
 			case self::SOURCE_MODE_SERVER_REQUEST_URI :
 				$url = $_SERVER ['REQUEST_URI'];
+				if(!is_null($this->getDi()) && $this->getDi()->serviceExists('url')){
+					$url = str_replace($this->getDi()->url->getBaseUri(),'/', $url);
+				}
 				break;
 			default :
 				$url = isset ( $_GET ['_url'] ) ? $_GET ['_url'] : '/';
 		}
 		
 		$this->requested_uri = $uri ? $uri : $url;
+		
+		var_dump($this->requested_uri);
 		
 		if ($this->wasMatched ()) {
 			
