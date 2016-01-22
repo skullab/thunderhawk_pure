@@ -132,3 +132,4 @@ $di->view->finish();
 
 echo $di->view->getContent() ;
 
+var_dump((int)false);
